@@ -57,6 +57,8 @@
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
   .dots i{width:8px; height:8px; border-radius:50%; background:var(--line);}
   .dots i.on{background:var(--accent);}
+  .reset{display:block; margin:0 auto 14px; background:transparent; color:var(--dim);
+    border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:11px;}
 </style>
 </head>
 <body>
@@ -66,6 +68,7 @@
     <p>휴대폰으로 푸는 미궁 — 손가락과 폰을 써라</p>
   </header>
   <div class="dots" id="dots"><i></i><i></i><i></i></div>
+  <button id="resetBtn" class="reset">↻ 처음부터</button>
 
   <!-- LEVEL 1 : 길게 누르기 -->
   <section class="level active" id="lv1">
@@ -145,14 +148,24 @@
       m.className="msg bad"; m.textContent="아니다. 다시.";
     }
   }
-  function next(i){
+  // 진행 저장 — localStorage(기기 브라우저에 기록, 새로고침/재방문해도 이어서)
+  const SAVE_KEY="mobilemaze.progress";
+  const ORDER=["lv1","lv2","lv3","done"];
+  function show(idx){
+    idx=Math.max(0,Math.min(idx,ORDER.length-1));
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
-    const order=["lv1","lv2","lv3","done"];
-    document.getElementById(order[i+1]).classList.add("active");
-    const dots=document.querySelectorAll("#dots i");
-    dots.forEach((d,idx)=>d.classList.toggle("on", idx<=i));
+    document.getElementById(ORDER[idx]).classList.add("active");
+    document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
+    try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
+  function next(i){ show(i+1); }
+  function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
+  // 저장된 진행으로 복원 + 리셋 버튼
+  show(loadProgress());
+  document.getElementById("resetBtn").addEventListener("click",()=>{
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
+  });
 
   // LEVEL 1 — 길게 누르기(600ms)
   (function(){
