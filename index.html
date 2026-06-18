@@ -304,6 +304,9 @@
   function next(i){ show(i+1); }
   function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
 
+  /* ===== L4 상태(돛/마이크) — show()의 stopMic 호출보다 먼저 선언해야 함(TDZ 방지) ===== */
+  let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
+
   /* ===== 초기화 ===== */
   applyLang(detectLang());
   show(loadProgress());
@@ -349,7 +352,6 @@
   })();
 
   /* ===== LEVEL 4 — 불기(돛): 마이크 소리로 돛 채우기 ===== */
-  let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
   function setSail(fill, lvl){
     $("windFill").style.width = fill + "%";
     const s=$("sail");
