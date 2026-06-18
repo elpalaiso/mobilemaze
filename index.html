@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-<title>밤바다 · 迷宮</title>
+<title>밤바다</title>
 <style>
   :root{
     --bg:#0e1320; --bg2:#141b2e; --ink:#e7ecf5; --dim:#8a96ad;
@@ -206,8 +206,8 @@
   /* ===== i18n 사전 — 새 레벨/트릭은 여기에 키만 추가하면 다국어 자동 적용 ===== */
   const I18N = {
     ko: {
-      title:"밤바다 · 迷宮",
-      subtitle:"휴대폰으로 푸는 밤바다 미궁 — 누군가를 건너편까지 바래다주는 항해",
+      title:"밤바다",
+      subtitle:"",
       reset:"↻ 처음부터",
       confirm:"확인",
       placeholder:"암호 입력",
@@ -255,8 +255,8 @@
       answers:["달빛","등대","수평선","북극성"]
     },
     en: {
-      title:"Night Sea · 迷宮",
-      subtitle:"A night-sea labyrinth for your phone — ferry someone safely to the far shore",
+      title:"Night Sea",
+      subtitle:"",
       reset:"↻ Restart",
       confirm:"Enter",
       placeholder:"passcode",
@@ -322,7 +322,8 @@
     document.documentElement.lang = lang;
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
 
-    setT("t-title",CUR.title);   setT("t-subtitle",CUR.subtitle);  setT("resetBtn",CUR.reset);
+    setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
+    const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
     setT("l1-tag",CUR.l1tag); setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
     setT("l1-reveal",CUR.l1reveal); setT("l1-hint",CUR.l1hint);
     setT("l2-tag",CUR.l2tag); setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
