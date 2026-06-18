@@ -68,6 +68,16 @@
   #l5-reveal{opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
     font-size:18px; letter-spacing:.05em; margin-top:12px;}
   #l5-reveal.show{opacity:1;}
+  /* L6 등불 감싸기 */
+  .flamebox{text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px; touch-action:none;}
+  .flame{font-size:44px; line-height:1; display:inline-block;
+    animation:flicker .25s infinite alternate;}
+  .flame.steady{animation:none; transform:none;}
+  @keyframes flicker{ from{transform:translateX(-2px) rotate(-5deg); opacity:.55;}
+    to{transform:translateX(2px) rotate(5deg); opacity:.9;} }
+  .shelter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
+  .shelter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
   .clear{text-align:center; padding:30px 12px;}
   .clear h2{color:var(--accent); margin:0 0 8px;}
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
@@ -87,7 +97,7 @@
     <h1 id="t-title"></h1>
     <p id="t-subtitle"></p>
   </header>
-  <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <button id="resetBtn" class="reset"></button>
 
   <!-- LEVEL 1 : 길게 누르기 (튜토리얼) -->
@@ -169,6 +179,19 @@
     <div class="msg" id="msg5"></div>
   </section>
 
+  <!-- LEVEL 6 : 두 손가락 감싸기(등불 보살핌) — 2막 안개 -->
+  <section class="level" id="lv6">
+    <div class="tag" id="l6-tag"></div>
+    <div class="riddle" id="l6-riddle"></div>
+    <div class="flamebox" id="flameBox">
+      <div class="flame" id="flame">🕯️</div>
+      <div class="shelter"><div class="fill" id="flameFill"></div></div>
+      <div class="gauge" id="flameGauge"></div>
+    </div>
+    <button class="sensorBtn" id="shelterBtn"></button>
+    <div class="hint" id="l6-hint"></div>
+  </section>
+
   <!-- CLEAR -->
   <section class="level" id="done">
     <div class="clear">
@@ -220,6 +243,12 @@
       l5hint:"힌트: 손가락으로 별을 *모두 잇도록* 그어라. (안 되면 ‘다시 긋기’)",
       l5clear:"↺ 다시 긋기",
       l5reveal:"북극성",
+      l6tag:"안개 1 · 등불 감싸기",
+      l6riddle:"🌫️ 안개가 짙다. 작은 등불 하나가 바람에 휘청인다.\n두 손가락으로 감싸, 불꽃을 지켜라.",
+      l6hint:"힌트: 두 손가락을 등불 양옆에 모아 *감싸라.* (한 손이면 아래 ‘가리기’를 길게 눌러)",
+      l6shelterPrefix:"보호: ",
+      l6shelterBtn:"🤚 한 손으로 가리기 (길게)",
+      l6set:"불꽃이 잦아들지 않는다… 곁에 온기가 머문다 🕯️",
       doneTitle:"항해 🌅",
       doneBody:"별을 이어 길을 찾고, 바람을 받아 나아간다.<br>밤바다를, 마침내 건넌다.",
       doneEnd:"— 1막 끝 · 다음 항해는 곧 —",
@@ -263,6 +292,12 @@
       l5hint:"Hint: drag to *connect all the stars*. (stuck? tap ‘redraw’)",
       l5clear:"↺ redraw",
       l5reveal:"polaris",
+      l6tag:"FOG 1 · shelter the flame",
+      l6riddle:"🌫️ The fog is thick. A small lantern wavers in the wind.\nCup it with two fingers and keep the flame alive.",
+      l6hint:"Hint: bring two fingers around the lantern to *shelter* it. (one hand? press & hold ‘shield’ below)",
+      l6shelterPrefix:"shelter: ",
+      l6shelterBtn:"🤚 shield with one hand (hold)",
+      l6set:"The flame holds steady… a warmth stays beside you 🕯️",
       doneTitle:"Voyage 🌅",
       doneBody:"Connect the stars to find the way, catch the wind, and go.<br>At last, across the night sea.",
       doneEnd:"— end of act 1 · next voyage soon —",
@@ -298,6 +333,8 @@
     setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar); setT("windGauge",CUR.l4windPrefix+"0%");
     setT("l5-tag",CUR.l5tag); setT("l5-riddle",CUR.l5riddle); setT("l5-hint",CUR.l5hint);
     setT("l5-reveal",CUR.l5reveal); setT("routeClearBtn",CUR.l5clear);
+    setT("l6-tag",CUR.l6tag); setT("l6-riddle",CUR.l6riddle); setT("l6-hint",CUR.l6hint);
+    setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -323,17 +360,19 @@
 
   /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
   const SAVE_KEY="mobilemaze.progress";
-  const ORDER=["lv1","lv2","lv3","lv4","lv5","done"];
+  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","done"];
   let curIdx = 0;
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
     curIdx = idx;
     if(ORDER[idx]!=="lv4") stopMic();        // 돛 레벨을 떠나면 마이크 정리
+    if(ORDER[idx]!=="lv6") flameStop();      // 등불 레벨을 떠나면 루프 정리
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
     $(ORDER[idx]).classList.add("active");
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
     if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
+    if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function advance(){ show(curIdx+1); }
@@ -342,6 +381,7 @@
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
+  let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -351,6 +391,7 @@
     sailDone=false; setSail(0,0);                     // L4
     $("windBtn").style.display=""; $("oarBtn").style.display="none";
     routeReset();                                     // L5
+    flameReset();                                     // L6
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
   }
@@ -517,6 +558,61 @@
       routeCtx.beginPath(); routeCtx.arc(sx,sy, s.hit?6:4, 0, 7);
       routeCtx.fillStyle = s.hit ? "#e3a542" : "#3a4663"; routeCtx.fill();
     });
+  }
+
+  /* ===== LEVEL 6 — 두 손가락 감싸기(등불 보살핌): 불씨를 양손으로 감싸 지킨다 ===== */
+  function flameRender(){
+    $("flameFill").style.width = flameShelter + "%";
+    const f=$("flame");
+    f.classList.toggle("steady", (flameSheltering||flameBtnHold) && !flameDone);
+    f.style.opacity = (0.5 + 0.5*flameShelter/100).toFixed(2);
+    $("flameGauge").textContent = CUR.l6shelterPrefix + Math.round(flameShelter) + "%";
+  }
+  function flameEval(e){
+    if(flameDone){ flameSheltering=false; return; }
+    const t=e.touches;
+    if(t && t.length>=2){
+      const d=Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+      flameSheltering = d < 180;            // 두 손가락이 등불을 감쌀 만큼 가까움
+    } else flameSheltering=false;
+  }
+  function flameLoop(){
+    if(!flameDone){
+      if(flameSheltering || flameBtnHold) flameShelter=Math.min(100, flameShelter+2.0);
+      else                                flameShelter=Math.max(0, flameShelter-1.1);
+      flameRender();
+      if(flameShelter>=100){ flameComplete(); return; }
+    }
+    flameRaf=requestAnimationFrame(flameLoop);
+  }
+  function flameStop(){ if(flameRaf){ cancelAnimationFrame(flameRaf); flameRaf=null; } }
+  function flameComplete(){
+    if(flameDone) return; flameDone=true;
+    const f=$("flame"); f.classList.add("steady"); f.style.opacity="1";
+    $("flameGauge").textContent = CUR.l6set;
+    flameStop();
+    setTimeout(advance, 1000);              // lv6 → done
+  }
+  function flameReset(){
+    flameShelter=0; flameDone=false; flameSheltering=false; flameBtnHold=false;
+    const ff=$("flameFill"); if(ff) ff.style.width="0%";
+    const fl=$("flame"); if(fl){ fl.classList.remove("steady"); fl.style.opacity=""; }
+    const fg=$("flameGauge"); if(fg) fg.textContent=CUR.l6shelterPrefix+"0%";
+  }
+  function flameInit(){
+    if(!flameBox){
+      flameBox=$("flameBox");
+      const ev=e=>{ e.preventDefault(); flameEval(e); };
+      flameBox.addEventListener("touchstart",ev,{passive:false});
+      flameBox.addEventListener("touchmove",ev,{passive:false});
+      flameBox.addEventListener("touchend",e=>flameEval(e));
+      const b=$("shelterBtn");
+      b.addEventListener("pointerdown",()=>{ flameBtnHold=true; });
+      b.addEventListener("pointerup",()=>{ flameBtnHold=false; });
+      b.addEventListener("pointerleave",()=>{ flameBtnHold=false; });
+    }
+    if(!flameDone) flameRender();
+    flameStop(); flameRaf=requestAnimationFrame(flameLoop);
   }
 </script>
 </body>
