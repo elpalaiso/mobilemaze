@@ -307,11 +307,23 @@
   /* ===== L4 상태(돛/마이크) — show()의 stopMic 호출보다 먼저 선언해야 함(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
 
+  /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태(공개/입력/메시지)까지 초기화 */
+  function resetLevels(){
+    $("pressBox").classList.remove("lit");            // L1 공개 해제
+    $("tiltBox").classList.remove("show");            // L3 비밀 숨김
+    $("gauge").textContent = CUR.gaugeInit;
+    sailDone=false; setSail(0,0);                     // L4 돛 비우기
+    $("windBtn").style.display=""; $("oarBtn").style.display="none";
+    ["in1","in2","in3"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
+    ["msg1","msg2","msg3"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
+  }
+
   /* ===== 초기화 ===== */
   applyLang(detectLang());
   show(loadProgress());
   $("resetBtn").addEventListener("click",()=>{
-    stopMic(); try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
+    stopMic(); resetLevels();
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
   });
 
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
