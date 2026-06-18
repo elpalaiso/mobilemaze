@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-<title>미궁 · 밤바다</title>
+<title>밤바다 · 迷宮</title>
 <style>
   :root{
     --bg:#0e1320; --bg2:#141b2e; --ink:#e7ecf5; --dim:#8a96ad;
@@ -16,6 +16,10 @@
   body{min-height:100dvh; display:flex; flex-direction:column; align-items:center;
     padding:24px 18px 56px; line-height:1.6;}
   .wrap{width:100%; max-width:440px;}
+  .langbar{display:flex; justify-content:flex-end; gap:6px; margin-bottom:6px;}
+  .langbar button{background:transparent; border:1px solid var(--line); color:var(--dim);
+    border-radius:7px; padding:3px 9px; font-size:11px;}
+  .langbar button.on{color:var(--accent); border-color:var(--accent);}
   header{text-align:center; margin:8px 0 22px;}
   header h1{font-size:20px; letter-spacing:.06em; margin:0; color:var(--accent);}
   header p{font-size:12px; color:var(--dim); margin:6px 0 0;}
@@ -63,26 +67,29 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="langbar">
+    <button data-lang="ko">한</button>
+    <button data-lang="en">EN</button>
+  </div>
   <header>
-    <h1>밤바다 · 迷宮</h1>
-    <p>휴대폰으로 푸는 미궁 — 손가락과 폰을 써라</p>
+    <h1 id="t-title"></h1>
+    <p id="t-subtitle"></p>
   </header>
   <div class="dots" id="dots"><i></i><i></i><i></i></div>
-  <button id="resetBtn" class="reset">↻ 처음부터</button>
+  <button id="resetBtn" class="reset"></button>
 
   <!-- LEVEL 1 : 길게 누르기 -->
   <section class="level active" id="lv1">
     <div class="tag">LEVEL 1</div>
-    <div class="riddle">🌑 무언가가 어둠에 가려 있다.
-빛은, 가만히 오래 닿아야 든다.</div>
+    <div class="riddle" id="l1-riddle"></div>
     <div class="press" id="pressBox">
-      <span class="label">꾹 — 눌러본다</span>
-      <span class="reveal">달빛</span>
+      <span class="label" id="l1-press"></span>
+      <span class="reveal" id="l1-reveal"></span>
     </div>
-    <div class="hint">힌트: 화면을 *길게* 눌러라.</div>
+    <div class="hint" id="l1-hint"></div>
     <div class="ans">
-      <input id="in1" inputmode="text" placeholder="암호 입력" autocomplete="off" />
-      <button onclick="check(0,'in1','msg1')">확인</button>
+      <input id="in1" inputmode="text" autocomplete="off" />
+      <button class="confirmBtn" onclick="check(0,'in1','msg1')"></button>
     </div>
     <div class="msg" id="msg1"></div>
   </section>
@@ -90,17 +97,16 @@
   <!-- LEVEL 2 : 핀치 줌 -->
   <section class="level" id="lv2">
     <div class="tag">LEVEL 2</div>
-    <div class="riddle">📜 진실은 깨알처럼 작다.
-두 손가락으로, 키워서 읽어라.</div>
+    <div class="riddle" id="l2-riddle"></div>
     <div class="scroll">
-      파도가 밤새 종이를 적신다. 글씨는 번지고, 대부분은 의미가 없다.
-      <span class="tiny">암호는 등대</span>
-      그래도 한 줄, 아주 작은 한 줄만은 끝까지 남았다.
+      <span id="l2-before"></span>
+      <span class="tiny" id="l2-tiny"></span>
+      <span id="l2-after"></span>
     </div>
-    <div class="hint">힌트: 회색 글상자를 *핀치 줌*으로 확대해.</div>
+    <div class="hint" id="l2-hint"></div>
     <div class="ans">
-      <input id="in2" inputmode="text" placeholder="암호 입력" autocomplete="off" />
-      <button onclick="check(1,'in2','msg2')">확인</button>
+      <input id="in2" inputmode="text" autocomplete="off" />
+      <button class="confirmBtn" onclick="check(1,'in2','msg2')"></button>
     </div>
     <div class="msg" id="msg2"></div>
   </section>
@@ -108,17 +114,16 @@
   <!-- LEVEL 3 : 폰 기울이기 -->
   <section class="level" id="lv3">
     <div class="tag">LEVEL 3</div>
-    <div class="riddle">📱 똑바로 보면 안 보인다.
-폰을 옆으로 기울여, 수면을 맞춰라.</div>
+    <div class="riddle" id="l3-riddle"></div>
     <div class="tilt" id="tiltBox">
-      <span class="secret">수평선</span>
-      <div class="gauge" id="gauge">기울기: —</div>
+      <span class="secret" id="l3-secret"></span>
+      <div class="gauge" id="gauge"></div>
     </div>
-    <button class="sensorBtn" id="sensorBtn">📲 탭해서 센서 켜기 (iOS)</button>
-    <div class="hint">힌트: 폰을 좌우로 약 45° *기울이면* 드러난다.</div>
+    <button class="sensorBtn" id="sensorBtn"></button>
+    <div class="hint" id="l3-hint"></div>
     <div class="ans">
-      <input id="in3" inputmode="text" placeholder="암호 입력" autocomplete="off" />
-      <button onclick="check(2,'in3','msg3')">확인</button>
+      <input id="in3" inputmode="text" autocomplete="off" />
+      <button class="confirmBtn" onclick="check(2,'in3','msg3')"></button>
     </div>
     <div class="msg" id="msg3"></div>
   </section>
@@ -126,50 +131,147 @@
   <!-- CLEAR -->
   <section class="level" id="done">
     <div class="clear">
-      <h2>탈출 🌅</h2>
-      <p>달빛 → 등대 → 수평선.<br>밤바다를 건넜다.</p>
-      <p style="color:var(--dim);font-size:12px;margin-top:18px;">— 데모 끝 —</p>
+      <h2 id="done-title"></h2>
+      <p id="done-body"></p>
+      <p id="done-end" style="color:var(--dim);font-size:12px;margin-top:18px;"></p>
     </div>
   </section>
 </div>
 
 <script>
-  // 데모용: 정답 평문. 실전은 해시/Cloudflare Workers로 숨긴다.
-  const ANSWERS = ["달빛","등대","수평선"];
-  const norm = s => (s||"").trim().toLowerCase();
+  /* ===== i18n 사전 — 새 레벨/트릭은 여기에 키만 추가하면 다국어 자동 적용 ===== */
+  const I18N = {
+    ko: {
+      title:"밤바다 · 迷宮",
+      subtitle:"휴대폰으로 푸는 미궁 — 손가락과 폰을 써라",
+      reset:"↻ 처음부터",
+      confirm:"확인",
+      placeholder:"암호 입력",
+      ok:"맞다. 다음으로.",
+      bad:"아니다. 다시.",
+      gaugeInit:"기울기: —",
+      gaugePrefix:"기울기: ",
+      sensor:"📲 탭해서 센서 켜기 (iOS)",
+      l1riddle:"🌑 무언가가 어둠에 가려 있다.\n빛은, 가만히 오래 닿아야 든다.",
+      l1press:"꾹 — 눌러본다",
+      l1reveal:"달빛",
+      l1hint:"힌트: 화면을 *길게* 눌러라.",
+      l2riddle:"📜 진실은 깨알처럼 작다.\n두 손가락으로, 키워서 읽어라.",
+      l2before:"파도가 밤새 종이를 적신다. 글씨는 번지고, 대부분은 의미가 없다.",
+      l2tiny:"암호는 등대",
+      l2after:"그래도 한 줄, 아주 작은 한 줄만은 끝까지 남았다.",
+      l2hint:"힌트: 회색 글상자를 *핀치 줌*으로 확대해.",
+      l3riddle:"📱 똑바로 보면 안 보인다.\n폰을 옆으로 기울여, 수면을 맞춰라.",
+      l3secret:"수평선",
+      l3hint:"힌트: 폰을 좌우로 약 45° *기울이면* 드러난다.",
+      doneTitle:"탈출 🌅",
+      doneBody:"달빛 → 등대 → 수평선.<br>밤바다를 건넜다.",
+      doneEnd:"— 데모 끝 —",
+      answers:["달빛","등대","수평선"]
+    },
+    en: {
+      title:"Night Sea · 迷宮",
+      subtitle:"A labyrinth for your phone — use your fingers and your device",
+      reset:"↻ Restart",
+      confirm:"Enter",
+      placeholder:"passcode",
+      ok:"Correct. Onward.",
+      bad:"No. Try again.",
+      gaugeInit:"tilt: —",
+      gaugePrefix:"tilt: ",
+      sensor:"📲 Tap to enable sensor (iOS)",
+      l1riddle:"🌑 Something hides in the dark.\nLight comes only to what waits, long and still.",
+      l1press:"press — and hold",
+      l1reveal:"moonlight",
+      l1hint:"Hint: *press and hold* the screen.",
+      l2riddle:"📜 The truth is fine as a grain.\nPinch with two fingers to read it.",
+      l2before:"Waves soak the paper all night. The ink bleeds; most of it means nothing.",
+      l2tiny:"the passcode is lighthouse",
+      l2after:"Yet one line, the smallest line, survived to the end.",
+      l2hint:"Hint: *pinch-zoom* the gray box.",
+      l3riddle:"📱 Look straight on and you see nothing.\nTilt your phone sideways, level it to the water.",
+      l3secret:"horizon",
+      l3hint:"Hint: tilt the phone left/right ~45° to reveal it.",
+      doneTitle:"Escape 🌅",
+      doneBody:"moonlight → lighthouse → horizon.<br>You crossed the night sea.",
+      doneEnd:"— end of demo —",
+      answers:["moonlight","lighthouse","horizon"]
+    }
+  };
 
+  const $ = id => document.getElementById(id);
+  const setT = (id,t) => { const e=$(id); if(e) e.textContent=t; };
+  let CUR = I18N.ko;            // 현재 언어 사전
+  const LANG_KEY = "mobilemaze.lang";
+
+  function detectLang(){
+    const saved = localStorage.getItem(LANG_KEY);
+    if(saved && I18N[saved]) return saved;
+    return (navigator.language||"ko").toLowerCase().startsWith("ko") ? "ko" : "en";
+  }
+
+  function applyLang(lang){
+    if(!I18N[lang]) lang="ko";
+    CUR = I18N[lang];
+    document.documentElement.lang = lang;
+    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+
+    setT("t-title",CUR.title);   setT("t-subtitle",CUR.subtitle);
+    setT("resetBtn",CUR.reset);
+    setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
+    setT("l1-reveal",CUR.l1reveal); setT("l1-hint",CUR.l1hint);
+    setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
+    setT("l2-tiny",CUR.l2tiny);     setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
+    setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret); setT("l3-hint",CUR.l3hint);
+    setT("sensorBtn",CUR.sensor);   setT("gauge",CUR.gaugeInit);
+    setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
+    $("done-body").innerHTML = CUR.doneBody;
+    document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
+    ["in1","in2","in3"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
+    document.querySelectorAll(".langbar button").forEach(b=>
+      b.classList.toggle("on", b.dataset.lang===lang));
+  }
+
+  document.querySelectorAll(".langbar button").forEach(b=>
+    b.addEventListener("click",()=>applyLang(b.dataset.lang)));
+
+  /* ===== 정답 확인 (정답은 현재 언어 사전에서) ===== */
+  const norm = s => (s||"").trim().toLowerCase();
   function check(i, inId, msgId){
-    const v = norm(document.getElementById(inId).value);
-    const m = document.getElementById(msgId);
-    if(v === norm(ANSWERS[i])){
-      m.className="msg ok"; m.textContent="맞다. 다음으로.";
+    const v = norm($(inId).value);
+    const m = $(msgId);
+    if(v === norm(CUR.answers[i])){
+      m.className="msg ok"; m.textContent=CUR.ok;
       setTimeout(()=>next(i), 600);
     } else {
-      m.className="msg bad"; m.textContent="아니다. 다시.";
+      m.className="msg bad"; m.textContent=CUR.bad;
     }
   }
-  // 진행 저장 — localStorage(기기 브라우저에 기록, 새로고침/재방문해도 이어서)
+
+  /* ===== 진행 저장 — localStorage(새로고침/재방문해도 이어서) ===== */
   const SAVE_KEY="mobilemaze.progress";
   const ORDER=["lv1","lv2","lv3","done"];
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
-    document.getElementById(ORDER[idx]).classList.add("active");
+    $(ORDER[idx]).classList.add("active");
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function next(i){ show(i+1); }
   function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
-  // 저장된 진행으로 복원 + 리셋 버튼
+
+  /* ===== 초기화 ===== */
+  applyLang(detectLang());
   show(loadProgress());
-  document.getElementById("resetBtn").addEventListener("click",()=>{
+  $("resetBtn").addEventListener("click",()=>{
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
   });
 
-  // LEVEL 1 — 길게 누르기(600ms)
+  /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
   (function(){
-    const box=document.getElementById("pressBox"); let t=null;
+    const box=$("pressBox"); let t=null;
     const start=e=>{ t=setTimeout(()=>box.classList.add("lit"),600); };
     const end=e=>{ clearTimeout(t); };
     box.addEventListener("touchstart",start,{passive:true});
@@ -179,30 +281,25 @@
     box.addEventListener("mouseleave",end);
   })();
 
-  // LEVEL 3 — 기울이기(deviceorientation)
+  /* ===== LEVEL 3 — 기울이기(deviceorientation) ===== */
   (function(){
-    const box=document.getElementById("tiltBox");
-    const gauge=document.getElementById("gauge");
-    const btn=document.getElementById("sensorBtn");
+    const box=$("tiltBox"), gauge=$("gauge"), btn=$("sensorBtn");
     function onTilt(e){
       const g = Math.round(e.gamma||0); // 좌우 기울기
-      gauge.textContent = "기울기: " + g + "°";
+      gauge.textContent = CUR.gaugePrefix + g + "°";
       box.classList.toggle("show", Math.abs(g) > 40);
     }
     function enable(){
-      // iOS 13+ : 권한 요청 필요
       if(typeof DeviceOrientationEvent!=="undefined" &&
          typeof DeviceOrientationEvent.requestPermission==="function"){
         DeviceOrientationEvent.requestPermission().then(p=>{
           if(p==="granted"){ window.addEventListener("deviceorientation",onTilt); btn.style.display="none"; }
-          else { gauge.textContent="센서 권한이 거부됨"; }
-        }).catch(()=>{ gauge.textContent="센서 사용 불가(데스크톱?)"; });
+        }).catch(()=>{});
       } else {
         window.addEventListener("deviceorientation",onTilt); btn.style.display="none";
       }
     }
     btn.addEventListener("click",enable);
-    // 안드로이드/일부 브라우저는 권한 없이 바로 동작
     if(typeof DeviceOrientationEvent!=="undefined" &&
        typeof DeviceOrientationEvent.requestPermission!=="function"){
       window.addEventListener("deviceorientation",onTilt);
