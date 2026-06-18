@@ -53,9 +53,15 @@
   .tilt .secret{opacity:0; transition:opacity .25s; color:var(--accent);
     font-size:18px; letter-spacing:.05em;}
   .tilt.show .secret{opacity:1;}
-  .tilt .gauge{font-size:11px; color:var(--dim); margin-top:10px;}
+  .gauge{font-size:11px; color:var(--dim); margin-top:10px;}
   .sensorBtn{margin-top:14px; background:transparent; color:var(--accent);
     border:1px solid var(--accent); border-radius:10px; padding:10px 14px; font-size:13px;}
+  /* L4 불기(돛) */
+  .sailbox{text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px;}
+  .sail{font-size:46px; line-height:1; filter:grayscale(1) opacity(.4); transition:.15s;}
+  .windmeter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
+  .windmeter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
   .clear{text-align:center; padding:30px 12px;}
   .clear h2{color:var(--accent); margin:0 0 8px;}
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
@@ -75,12 +81,12 @@
     <h1 id="t-title"></h1>
     <p id="t-subtitle"></p>
   </header>
-  <div class="dots" id="dots"><i></i><i></i><i></i></div>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
   <button id="resetBtn" class="reset"></button>
 
-  <!-- LEVEL 1 : 길게 누르기 -->
+  <!-- LEVEL 1 : 길게 누르기 (튜토리얼) -->
   <section class="level active" id="lv1">
-    <div class="tag">LEVEL 1</div>
+    <div class="tag" id="l1-tag"></div>
     <div class="riddle" id="l1-riddle"></div>
     <div class="press" id="pressBox">
       <span class="label" id="l1-press"></span>
@@ -94,9 +100,9 @@
     <div class="msg" id="msg1"></div>
   </section>
 
-  <!-- LEVEL 2 : 핀치 줌 -->
+  <!-- LEVEL 2 : 핀치 줌 (튜토리얼) -->
   <section class="level" id="lv2">
-    <div class="tag">LEVEL 2</div>
+    <div class="tag" id="l2-tag"></div>
     <div class="riddle" id="l2-riddle"></div>
     <div class="scroll">
       <span id="l2-before"></span>
@@ -111,9 +117,9 @@
     <div class="msg" id="msg2"></div>
   </section>
 
-  <!-- LEVEL 3 : 폰 기울이기 -->
+  <!-- LEVEL 3 : 폰 기울이기 (튜토리얼) -->
   <section class="level" id="lv3">
-    <div class="tag">LEVEL 3</div>
+    <div class="tag" id="l3-tag"></div>
     <div class="riddle" id="l3-riddle"></div>
     <div class="tilt" id="tiltBox">
       <span class="secret" id="l3-secret"></span>
@@ -126,6 +132,20 @@
       <button class="confirmBtn" onclick="check(2,'in3','msg3')"></button>
     </div>
     <div class="msg" id="msg3"></div>
+  </section>
+
+  <!-- LEVEL 4 : 불기(돛) — 첫 항해 -->
+  <section class="level" id="lv4">
+    <div class="tag" id="l4-tag"></div>
+    <div class="riddle" id="l4-riddle"></div>
+    <div class="sailbox">
+      <div class="sail" id="sail">⛵</div>
+      <div class="windmeter"><div class="fill" id="windFill"></div></div>
+      <div class="gauge" id="windGauge"></div>
+    </div>
+    <button class="sensorBtn" id="windBtn"></button>
+    <button class="sensorBtn" id="oarBtn" style="display:none"></button>
+    <div class="hint" id="l4-hint"></div>
   </section>
 
   <!-- CLEAR -->
@@ -143,7 +163,7 @@
   const I18N = {
     ko: {
       title:"밤바다 · 迷宮",
-      subtitle:"휴대폰으로 푸는 미궁 — 손가락과 폰을 써라",
+      subtitle:"휴대폰으로 푸는 미궁 — 먼저 바다를 읽는 법을 배우고, 건넌다",
       reset:"↻ 처음부터",
       confirm:"확인",
       placeholder:"암호 입력",
@@ -152,26 +172,36 @@
       gaugeInit:"기울기: —",
       gaugePrefix:"기울기: ",
       sensor:"📲 탭해서 센서 켜기 (iOS)",
+      l1tag:"연습 1 · 길게 누르기",
       l1riddle:"🌑 무언가가 어둠에 가려 있다.\n빛은, 가만히 오래 닿아야 든다.",
       l1press:"꾹 — 눌러본다",
       l1reveal:"달빛",
       l1hint:"힌트: 화면을 *길게* 눌러라.",
+      l2tag:"연습 2 · 핀치 줌",
       l2riddle:"📜 진실은 깨알처럼 작다.\n두 손가락으로, 키워서 읽어라.",
       l2before:"파도가 밤새 종이를 적신다. 글씨는 번지고, 대부분은 의미가 없다.",
       l2tiny:"암호는 등대",
       l2after:"그래도 한 줄, 아주 작은 한 줄만은 끝까지 남았다.",
       l2hint:"힌트: 회색 글상자를 *핀치 줌*으로 확대해.",
+      l3tag:"연습 3 · 기울이기",
       l3riddle:"📱 똑바로 보면 안 보인다.\n폰을 옆으로 기울여, 수면을 맞춰라.",
       l3secret:"수평선",
       l3hint:"힌트: 폰을 좌우로 약 45° *기울이면* 드러난다.",
-      doneTitle:"탈출 🌅",
-      doneBody:"달빛 → 등대 → 수평선.<br>밤바다를 건넜다.",
-      doneEnd:"— 데모 끝 —",
+      l4tag:"출항 · 出航",
+      l4riddle:"🌬️ 연습은 끝났다. 이제 진짜 바다다.\n돛이 늘어져 있다 — 바람이 없으면, 배는 떠나지 못한다.",
+      l4hint:"힌트: 폰 마이크에 대고 *후— 불어라.* (돛이 차오르면 출항)",
+      l4windPrefix:"바람: ",
+      l4windBtn:"🎤 마이크 켜고 출항 준비",
+      l4set:"돛이 부푼다… 출항 🌊",
+      l4oar:"마이크 없이 — 노를 저어 출발",
+      doneTitle:"출항 🌅",
+      doneBody:"달빛 → 등대 → 수평선, 그리고 첫 바람.<br>밤바다로, 마침내 나아간다.",
+      doneEnd:"— 1막 끝 · 다음 항해는 곧 —",
       answers:["달빛","등대","수평선"]
     },
     en: {
       title:"Night Sea · 迷宮",
-      subtitle:"A labyrinth for your phone — use your fingers and your device",
+      subtitle:"A labyrinth for your phone — first learn to read the sea, then cross it",
       reset:"↻ Restart",
       confirm:"Enter",
       placeholder:"passcode",
@@ -180,28 +210,38 @@
       gaugeInit:"tilt: —",
       gaugePrefix:"tilt: ",
       sensor:"📲 Tap to enable sensor (iOS)",
+      l1tag:"PRACTICE 1 · press & hold",
       l1riddle:"🌑 Something hides in the dark.\nLight comes only to what waits, long and still.",
       l1press:"press — and hold",
       l1reveal:"moonlight",
       l1hint:"Hint: *press and hold* the screen.",
+      l2tag:"PRACTICE 2 · pinch zoom",
       l2riddle:"📜 The truth is fine as a grain.\nPinch with two fingers to read it.",
       l2before:"Waves soak the paper all night. The ink bleeds; most of it means nothing.",
       l2tiny:"the passcode is lighthouse",
       l2after:"Yet one line, the smallest line, survived to the end.",
       l2hint:"Hint: *pinch-zoom* the gray box.",
+      l3tag:"PRACTICE 3 · tilt",
       l3riddle:"📱 Look straight on and you see nothing.\nTilt your phone sideways, level it to the water.",
       l3secret:"horizon",
       l3hint:"Hint: tilt the phone left/right ~45° to reveal it.",
-      doneTitle:"Escape 🌅",
-      doneBody:"moonlight → lighthouse → horizon.<br>You crossed the night sea.",
-      doneEnd:"— end of demo —",
+      l4tag:"SET SAIL · 出航",
+      l4riddle:"🌬️ The drills are over. This is the real sea now.\nThe sail hangs limp — without wind, the boat cannot leave.",
+      l4hint:"Hint: *blow* into your phone's mic. (Fill the sail to set sail.)",
+      l4windPrefix:"wind: ",
+      l4windBtn:"🎤 Enable mic & prepare to sail",
+      l4set:"The sail swells… setting sail 🌊",
+      l4oar:"No mic — row out with the oars",
+      doneTitle:"Cast Off 🌅",
+      doneBody:"moonlight → lighthouse → horizon, then the first wind.<br>At last, out into the night sea.",
+      doneEnd:"— end of act 1 · next voyage soon —",
       answers:["moonlight","lighthouse","horizon"]
     }
   };
 
   const $ = id => document.getElementById(id);
   const setT = (id,t) => { const e=$(id); if(e) e.textContent=t; };
-  let CUR = I18N.ko;            // 현재 언어 사전
+  let CUR = I18N.ko;
   const LANG_KEY = "mobilemaze.lang";
 
   function detectLang(){
@@ -216,14 +256,16 @@
     document.documentElement.lang = lang;
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
 
-    setT("t-title",CUR.title);   setT("t-subtitle",CUR.subtitle);
-    setT("resetBtn",CUR.reset);
-    setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
+    setT("t-title",CUR.title);   setT("t-subtitle",CUR.subtitle);  setT("resetBtn",CUR.reset);
+    setT("l1-tag",CUR.l1tag); setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
     setT("l1-reveal",CUR.l1reveal); setT("l1-hint",CUR.l1hint);
-    setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
-    setT("l2-tiny",CUR.l2tiny);     setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
-    setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret); setT("l3-hint",CUR.l3hint);
-    setT("sensorBtn",CUR.sensor);   setT("gauge",CUR.gaugeInit);
+    setT("l2-tag",CUR.l2tag); setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
+    setT("l2-tiny",CUR.l2tiny); setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
+    setT("l3-tag",CUR.l3tag); setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret);
+    setT("l3-hint",CUR.l3hint); setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
+    setT("l4-tag",CUR.l4tag); setT("l4-riddle",CUR.l4riddle); setT("l4-hint",CUR.l4hint);
+    setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar);
+    setT("windGauge",CUR.l4windPrefix+"0%");
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -231,7 +273,6 @@
     document.querySelectorAll(".langbar button").forEach(b=>
       b.classList.toggle("on", b.dataset.lang===lang));
   }
-
   document.querySelectorAll(".langbar button").forEach(b=>
     b.addEventListener("click",()=>applyLang(b.dataset.lang)));
 
@@ -250,9 +291,10 @@
 
   /* ===== 진행 저장 — localStorage(새로고침/재방문해도 이어서) ===== */
   const SAVE_KEY="mobilemaze.progress";
-  const ORDER=["lv1","lv2","lv3","done"];
+  const ORDER=["lv1","lv2","lv3","lv4","done"];
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
+    if($(ORDER[idx])!==$("lv4")) stopMic();  // 돛 레벨을 떠나면 마이크 정리
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
     $(ORDER[idx]).classList.add("active");
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
@@ -266,7 +308,7 @@
   applyLang(detectLang());
   show(loadProgress());
   $("resetBtn").addEventListener("click",()=>{
-    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
+    stopMic(); try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
   });
 
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
@@ -285,7 +327,7 @@
   (function(){
     const box=$("tiltBox"), gauge=$("gauge"), btn=$("sensorBtn");
     function onTilt(e){
-      const g = Math.round(e.gamma||0); // 좌우 기울기
+      const g = Math.round(e.gamma||0);
       gauge.textContent = CUR.gaugePrefix + g + "°";
       box.classList.toggle("show", Math.abs(g) > 40);
     }
@@ -305,6 +347,56 @@
       window.addEventListener("deviceorientation",onTilt);
     }
   })();
+
+  /* ===== LEVEL 4 — 불기(돛): 마이크 소리로 돛 채우기 ===== */
+  let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
+  function setSail(fill, lvl){
+    $("windFill").style.width = fill + "%";
+    const s=$("sail");
+    s.style.filter = "grayscale(" + (1-fill/100).toFixed(2) + ") opacity(" + (0.4+0.6*fill/100).toFixed(2) + ")";
+    s.style.transform = "scale(" + (1+0.18*fill/100).toFixed(2) + ")";
+    $("windGauge").textContent = CUR.l4windPrefix + Math.round(fill) + "%";
+  }
+  function stopMic(){
+    if(micRaf){ cancelAnimationFrame(micRaf); micRaf=null; }
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
+  }
+  function sailComplete(){
+    if(sailDone) return; sailDone=true;
+    $("windGauge").textContent = CUR.l4set;
+    stopMic();
+    setTimeout(()=>next(3), 800);   // lv4 → done
+  }
+  async function startWind(){
+    try{
+      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==="suspended") await audioCtx.resume();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      $("windBtn").style.display="none";
+      let fill = 0;
+      (function loop(){
+        analyser.getByteFrequencyData(data);
+        let sum=0, n=24;                       // 저주파 에너지 ≈ 입김
+        for(let i=2;i<2+n;i++) sum+=data[i];
+        const lvl = sum/n;                      // 0..255
+        if(lvl > 55) fill = Math.min(100, fill + 3.2);
+        else        fill = Math.max(0, fill - 1.4);
+        setSail(fill, lvl);
+        if(fill>=100){ sailComplete(); return; }
+        micRaf = requestAnimationFrame(loop);
+      })();
+    }catch(e){
+      $("oarBtn").style.display="block";        // 마이크 거부/불가 → 노 젓기 폴백
+    }
+  }
+  $("windBtn").addEventListener("click",startWind);
+  $("oarBtn").addEventListener("click",()=>next(3));
 </script>
 </body>
 </html>
