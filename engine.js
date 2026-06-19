@@ -162,6 +162,7 @@ const $ = id => document.getElementById(id);
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
+    resetLevels();            // 트릭 전역 상태 0으로 — 시나리오 간 공유 트릭(row 등) 오염 방지
     show(loadProgress());
   }
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
