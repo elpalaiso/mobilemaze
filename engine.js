@@ -40,6 +40,7 @@ const $ = id => document.getElementById(id);
     setT("rowGauge",CUR.l7rowPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd); setT("hubTitle",CUR.hubTitle);
+    setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
@@ -180,8 +181,10 @@ const $ = id => document.getElementById(id);
   /* ===== 초기화 ===== */
   applyLang(detectLang());
   startScenario("tutorial");
-  showView("play");
+  if(!SAVE.seenTutorial){ showView("gate"); } else { buildHub(); showView("hub"); }   // 첫 방문=게이트, 기존=항구
   $("menuBtn").addEventListener("click",()=>{ buildHub(); showView("hub"); });
+  $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); showView("play"); });
+  $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); buildHub(); showView("hub"); });
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
