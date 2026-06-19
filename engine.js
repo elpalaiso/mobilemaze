@@ -44,8 +44,17 @@ const $ = id => document.getElementById(id);
 
   /* ===== 정답 확인 (정답은 현재 언어 사전에서) ===== */
   const norm = s => (s||"").trim().toLowerCase();
-  /* 햅틱(Vibration API) — 미지원/데스크탑은 자동 무시. 작은도착=짧게, 막완료=패턴 */
-  function haptic(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
+  /* 햅틱(Vibration API) — 미지원/데스크탑은 자동 무시. 작은도착=짧게, 막완료=패턴.
+     동시에 화면 글로우로 *시각 미러*(iOS 등 햅틱 미지원 환경 커버). */
+  function haptic(p){
+    try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){}
+    if(Array.isArray(p)) glow(1); else if(p>=15) glow(0);   // 자잘한 노젓기(8)는 글로우 제외
+  }
+  function glow(big){
+    const g=$("glow"); if(!g) return;
+    g.style.transition="none"; g.style.opacity = big ? "0.5" : "0.26";
+    requestAnimationFrame(()=>{ g.style.transition="opacity "+(big?720:400)+"ms ease-out"; g.style.opacity="0"; });
+  }
   function check(i, inId, msgId){
     const v = norm($(inId).value);
     const m = $(msgId);
@@ -67,7 +76,8 @@ const $ = id => document.getElementById(id);
     if(ORDER[idx]!=="lv4") stopMic();        // 돛 레벨을 떠나면 마이크 정리
     if(ORDER[idx]!=="lv6") flameStop();      // 등불 레벨을 떠나면 루프 정리
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
-    $(ORDER[idx]).classList.add("active");
+    const _lv=$(ORDER[idx]); _lv.classList.add("active");
+    _lv.style.opacity="0"; requestAnimationFrame(()=>{ _lv.style.transition="opacity .35s ease"; _lv.style.opacity="1"; });
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
     if(ORDER[idx]==="lv3") tiltInit();        // 기울이기/슬라이더 폴백 준비
@@ -388,7 +398,14 @@ const $ = id => document.getElementById(id);
     if(fwStep < CUR.l8lines.length){
       setT("l8-line", CUR.l8lines[fwStep]);
       const scenes=["🕯️","🏮","⛵","🌊"];
-      const sc=$("fwScene"); if(sc) sc.textContent = scenes[fwStep] || "🕯️";
+      const sc=$("fwScene");
+      if(sc){
+        sc.textContent = scenes[fwStep] || "🕯️";
+        sc.style.transition="none"; sc.style.transform="translateX(0)"; sc.style.opacity="1";
+        if(fwStep===1){   // 등불 건네기 — 건너편으로 천천히 흘러감
+          requestAnimationFrame(()=>{ sc.style.transition="transform 1.8s ease-out, opacity 1.8s"; sc.style.transform="translateX(64px)"; sc.style.opacity=".5"; });
+        }
+      }
     }
   }
   function fwAdvanceBeat(){
