@@ -18,4 +18,13 @@ const SCENARIOS = {
       { sec:"lv8", trick:"farewell", text:{ tag:"l8tag", hint:"l8hint" } },
     ],
   },
+  /* 첫 신규 시나리오(slice1: reuse-only 검증판). 새 트릭 '체온 나누기' + 전용 엔딩은 다음 단계. */
+  snow_lake: {
+    id: "snow_lake",
+    titleKey: "sc_snow",
+    levels: [
+      { sec:"lv1", trick:"press", ans:"snow_a1", text:{ tag:"snow1tag", riddle:"snow1riddle", press:"snow1press", reveal:"snow1reveal", hint:"snow1hint" } },
+      { sec:"lv7", trick:"row",   text:{ tag:"snow2tag", riddle:"snow2riddle", hint:"snow2hint" } },
+    ],
+  },
 };
