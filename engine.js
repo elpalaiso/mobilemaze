@@ -3,8 +3,22 @@ const $ = id => document.getElementById(id);
   let CUR = I18N.ko;
   const LANG_KEY = "mobilemaze.lang";
 
+  /* ===== 저장 v2 — 시나리오별 진행 + 언어. 구 progress/lang 1회 마이그레이션 ===== */
+  const SAVE2_KEY = "mobilemaze.v2";
+  function loadSave(){
+    try{ const raw=localStorage.getItem(SAVE2_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+    const oldStep=parseInt(localStorage.getItem("mobilemaze.progress")||"0",10);
+    const oldLang=localStorage.getItem("mobilemaze.lang")||null;
+    const s={ lang:oldLang, scenarios:{}, unlocked:["tutorial"] };
+    if(!isNaN(oldStep) && oldStep>0) s.scenarios.tutorial={ step:oldStep, cleared:false };
+    return s;
+  }
+  let SAVE = loadSave();
+  function persist(){ try{ localStorage.setItem(SAVE2_KEY, JSON.stringify(SAVE)); }catch(e){} }
+  function scenarioState(){ const id=RUN.scenario.id; return SAVE.scenarios[id] || (SAVE.scenarios[id]={ step:0, cleared:false }); }
+
   function detectLang(){
-    const saved = localStorage.getItem(LANG_KEY);
+    const saved = SAVE.lang;
     if(saved && I18N[saved]) return saved;
     return (navigator.language||"ko").toLowerCase().startsWith("ko") ? "ko" : "en";
   }
@@ -13,7 +27,7 @@ const $ = id => document.getElementById(id);
     if(!I18N[lang]) lang="ko";
     CUR = I18N[lang];
     document.documentElement.lang = lang;
-    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+    SAVE.lang=lang; persist();
 
     setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
     const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
@@ -103,10 +117,10 @@ const $ = id => document.getElementById(id);
     const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[idx]);            // 콘텐츠 바인딩 + 트릭 준비(registry)
     const nt=lvl ? TRICKS[lvl.trick] : null;
     if(nt){ if(nt.bind) nt.bind(lvl); if(nt.init) nt.init(); }
-    try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
+    const _st=scenarioState(); _st.step=idx; if(ORDER[idx]==="done") _st.cleared=true; persist();
   }
   function advance(){ show(curIdx+1); }
-  function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
+  function loadProgress(){ return scenarioState().step || 0; }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
@@ -137,7 +151,7 @@ const $ = id => document.getElementById(id);
   show(loadProgress());
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
-    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
+    const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
   });
 
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
