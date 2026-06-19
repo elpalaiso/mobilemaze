@@ -191,7 +191,9 @@ const $ = id => document.getElementById(id);
       const st=SAVE.scenarios[sc.id]||{};
       const card=document.createElement("button");
       card.className="hubcard";
-      card.textContent=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id);
+      const total=sc.levels.length, done=Math.min(st.step||0, total);   // step=완료 레벨 수
+      card.innerHTML=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id)+
+        ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
       card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
       list.appendChild(card);
     });

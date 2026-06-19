@@ -125,6 +125,8 @@
   #hubList{ display:flex; flex-direction:column; gap:10px; }
   .hubcard{ text-align:left; background:var(--bg2); border:1px solid var(--line); border-radius:14px;
     padding:16px 18px; color:var(--ink); font-size:15px; letter-spacing:.02em; }
+  .hubcount{ color:var(--dim); font-size:12px; }
+  .hubcount.full{ color:var(--accent); }
   #gate{ padding:14px 0; }
   #gatePrompt{ text-align:center; color:var(--accent); font-size:17px; letter-spacing:.04em; margin:18px 0 24px; }
   #gate .hubcard{ display:block; width:100%; text-align:center; margin:0 0 10px; }
