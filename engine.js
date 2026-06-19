@@ -47,6 +47,7 @@ const $ = id => document.getElementById(id);
     // 현재 활성 레벨 콘텐츠 재바인딩(언어 토글 반영)
     const _l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
     if(_l && TRICKS[_l.trick] && TRICKS[_l.trick].bind) TRICKS[_l.trick].bind(_l);
+    const _hub=$("hub"); if(_hub && _hub.style.display!=="none") buildHub();   // 허브 열려있으면 카드도 새 언어로
   }
   document.querySelectorAll(".langbar button").forEach(b=>
     b.addEventListener("click",()=>applyLang(b.dataset.lang)));
