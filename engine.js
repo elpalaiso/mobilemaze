@@ -38,7 +38,7 @@ const $ = id => document.getElementById(id);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("rowGauge",CUR.l7rowPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
-    setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
+    setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd); setT("hubTitle",CUR.hubTitle);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
@@ -132,6 +132,23 @@ const $ = id => document.getElementById(id);
     buildDots();
     show(loadProgress());
   }
+  /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
+  function showView(v){
+    ["play","hub","gate"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
+  }
+  function buildHub(){
+    const list=$("hubList"); if(!list) return;
+    setT("hubTitle", CUR.hubTitle);
+    list.innerHTML="";
+    Object.values(SCENARIOS).forEach(sc=>{
+      const st=SAVE.scenarios[sc.id]||{};
+      const card=document.createElement("button");
+      card.className="hubcard";
+      card.textContent=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id);
+      card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
+      list.appendChild(card);
+    });
+  }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
@@ -160,6 +177,8 @@ const $ = id => document.getElementById(id);
   /* ===== 초기화 ===== */
   applyLang(detectLang());
   startScenario("tutorial");
+  showView("play");
+  $("menuBtn").addEventListener("click",()=>{ buildHub(); showView("hub"); });
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);

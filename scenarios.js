@@ -6,6 +6,7 @@
 const SCENARIOS = {
   tutorial: {
     id: "tutorial",
+    titleKey: "sc_tutorial",
     levels: [
       { sec:"lv1", trick:"press", ans:"l1answer", text:{ tag:"l1tag", riddle:"l1riddle", press:"l1press", reveal:"l1reveal", hint:"l1hint" } },
       { sec:"lv2", trick:"pinch",    ans:"l2answer", text:{ tag:"l2tag", riddle:"l2riddle", before:"l2before", tiny:"l2tiny", after:"l2after", hint:"l2hint" } },
