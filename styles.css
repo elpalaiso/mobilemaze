@@ -45,7 +45,8 @@
   .tilt .secret{opacity:0; transition:opacity .25s; color:var(--accent);
     font-size:18px; letter-spacing:.05em;}
   .tilt.show .secret{opacity:1;}
-  .gauge{font-size:11px; color:var(--dim); margin-top:10px;}
+  .gauge{font-size:13px; color:var(--dim); margin-top:10px; transition:color .25s, font-size .25s;}
+  .gauge.done{ color:var(--accent); font-size:16px; font-weight:600; letter-spacing:.02em; }
   .sensorBtn{margin-top:14px; background:transparent; color:var(--accent);
     border:1px solid var(--accent); border-radius:10px; padding:10px 14px; font-size:13px;}
   /* L4 불기(돛) */

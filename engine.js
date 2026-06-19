@@ -303,7 +303,7 @@ const $ = id => document.getElementById(id);
     const s=$("sail");
     s.style.filter = "grayscale(" + (1-fill/100).toFixed(2) + ") opacity(" + (0.4+0.6*fill/100).toFixed(2) + ")";
     s.style.transform = "scale(" + (1+0.18*fill/100).toFixed(2) + ")";
-    $("windGauge").textContent = CUR.l4windPrefix + Math.round(fill) + "%";
+    const wg=$("windGauge"); wg.textContent = CUR.l4windPrefix + Math.round(fill) + "%"; wg.classList.remove("done");
   }
   function stopMic(){
     if(micRaf){ cancelAnimationFrame(micRaf); micRaf=null; }
@@ -312,9 +312,9 @@ const $ = id => document.getElementById(id);
   }
   function sailComplete(msg){
     if(sailDone) return; sailDone=true; haptic([0,80,40,120]);
-    $("windGauge").textContent = msg || CUR.l4set;
+    const wg=$("windGauge"); wg.textContent = msg || CUR.l4set; wg.classList.add("done");
     stopMic();
-    setTimeout(advance, 800);   // lv4 → lv5
+    setTimeout(advance, 3000);   // lv4 → lv5
   }
   /* 마이크 폴백 = 스킵이 아니라 '같은 게이지를 탭으로 채워' 같은 출항 흐름으로 */
   function oarRow(){
@@ -453,15 +453,15 @@ const $ = id => document.getElementById(id);
   function flameComplete(){
     if(flameDone) return; flameDone=true; haptic([0,80,40,120]);
     const f=$("flame"); f.classList.add("steady"); f.style.opacity="1";
-    $("flameGauge").textContent = CUR.l6set;
+    const fg=$("flameGauge"); fg.textContent = CUR.l6set; fg.classList.add("done");
     flameStop();
-    setTimeout(advance, 1000);              // lv6 → done
+    setTimeout(advance, 3000);              // lv6 → done
   }
   function flameReset(){
     flameShelter=0; flameDone=false; flameSheltering=false; flameBtnHold=false;
     const ff=$("flameFill"); if(ff) ff.style.width="0%";
     const fl=$("flame"); if(fl){ fl.classList.remove("steady"); fl.style.opacity=""; }
-    const fg=$("flameGauge"); if(fg) fg.textContent=CUR.l6shelterPrefix+"0%";
+    const fg=$("flameGauge"); if(fg){ fg.textContent=CUR.l6shelterPrefix+"0%"; fg.classList.remove("done"); }
   }
   function flameInit(){
     if(!flameBox){
@@ -499,14 +499,14 @@ const $ = id => document.getElementById(id);
   function rowComplete(){
     if(rowDone) return; rowDone=true; haptic([0,80,40,120]);
     $("oarL").classList.remove("next"); $("oarR").classList.remove("next");
-    $("rowGauge").textContent = CUR.l7set;
-    setTimeout(advance, 1000);                  // lv7 → done
+    const rg=$("rowGauge"); rg.textContent = CUR.l7set; rg.classList.add("done");
+    setTimeout(advance, 3000);                  // lv7 → done
   }
   function rowReset(){
     rowCount=0; rowNext='left'; rowDone=false;
     const f=$("rowFill"); if(f) f.style.width="0%";
     ["oarL","oarR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
-    if($("rowGauge")) rowRender();
+    const rg=$("rowGauge"); if(rg){ rg.classList.remove("done"); rowRender(); }
   }
   function rowInit(){
     if(!rowBound){
@@ -538,13 +538,13 @@ const $ = id => document.getElementById(id);
   }
   function foldComplete(){
     if(foldDone) return; foldDone=true; haptic([0,80,40,120]);
-    foldRender();
-    setTimeout(advance, 1000);
+    foldRender(); $("foldGauge").classList.add("done");
+    setTimeout(advance, 3000);
   }
   function foldReset(){
     foldCount=0; foldDone=false; foldDrag=false;
     const p=$("foldPaper"); if(p){ p.style.transform=""; p.textContent="📄"; }
-    if($("foldGauge")) foldRender();
+    const fg2=$("foldGauge"); if(fg2){ fg2.classList.remove("done"); foldRender(); }
   }
   function foldInit(){
     if(!foldBound){
@@ -589,14 +589,14 @@ const $ = id => document.getElementById(id);
   function rpComplete(){
     if(rpDone) return; rpDone=true; haptic([0,80,40,120]);
     const l=$("rpL"), r=$("rpR"); if(l) l.classList.remove("next"); if(r) r.classList.remove("next");
-    const g=$("rpGauge"); if(g) g.textContent = CUR.rpSet;
-    setTimeout(advance, 1000);
+    const g=$("rpGauge"); if(g){ g.textContent = CUR.rpSet; g.classList.add("done"); }
+    setTimeout(advance, 3000);
   }
   function rpReset(){
     rpCount=0; rpLeftDown=false; rpRightDown=false; rpLast=0; rpDone=false;
     const f=$("rpFill"); if(f) f.style.width="0%";
     ["rpL","rpR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
-    if($("rpGauge")) rpRender();
+    const g=$("rpGauge"); if(g){ g.classList.remove("done"); rpRender(); }
   }
   function rpInit(){
     if(!rpBound){
@@ -636,15 +636,15 @@ const $ = id => document.getElementById(id);
   function warmComplete(){
     if(warmDone) return; warmDone=true; warmHold=false;
     const d=$("dog"); if(d){ d.classList.add("warm"); d.style.opacity="1"; }
-    $("warmGauge").textContent = CUR.warmSet; haptic([0,80,40,120]);
+    const wg2=$("warmGauge"); wg2.textContent = CUR.warmSet; wg2.classList.add("done"); haptic([0,80,40,120]);
     warmStop();
-    setTimeout(advance, 1000);
+    setTimeout(advance, 3000);
   }
   function warmReset(){
     warmFill=0; warmDone=false; warmHold=false;
     const f=$("warmFill"); if(f) f.style.width="0%";
     const d=$("dog"); if(d){ d.classList.remove("warm"); d.style.opacity=""; }
-    const g=$("warmGauge"); if(g) g.textContent=CUR.warmPrefix+"0%";
+    const g=$("warmGauge"); if(g){ g.textContent=CUR.warmPrefix+"0%"; g.classList.remove("done"); }
   }
   function warmInit(){
     if(!warmBox){
