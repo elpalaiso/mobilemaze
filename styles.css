@@ -94,6 +94,16 @@
     border-radius:12px; padding:24px 14px; touch-action:none; user-select:none; -webkit-user-select:none; }
   .paper{ font-size:48px; line-height:1; display:inline-block; transition:transform .18s ease, filter .16s; }
   .paper.crease{ filter:brightness(1.5); }
+  /* 불씨 옮기기(ember) — 손 떼지 않고 천천히 긋기 */
+  .emberbox{ position:relative; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:34px 16px 16px; touch-action:none; user-select:none; -webkit-user-select:none; min-height:96px; }
+  .emberbox .lantern{ font-size:34px; position:absolute; top:16px; }
+  .emberbox .from{ left:16px; }
+  .emberbox .to{ right:16px; opacity:.35; transition:opacity .3s; }
+  .emberbox .to.lit{ opacity:1; }
+  .ember{ position:absolute; top:22px; left:0; font-size:22px; transform:translateX(-50%);
+    pointer-events:none; transition:opacity .2s; }
+  .ember.out{ opacity:.15; }
   .clear{text-align:center; padding:30px 12px;}
   .clear h2{color:var(--accent); margin:0 0 8px;}
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}

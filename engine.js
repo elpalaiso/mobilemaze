@@ -41,6 +41,7 @@ const $ = id => document.getElementById(id);
     setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
     setT("rpGauge",CUR.rpPrefix+"0%"); setT("rpSyncBtn",CUR.rpSyncBtn);
     setT("foldGauge",CUR.foldPrefix+"0/3");
+    setT("emberGauge",CUR.emberPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
     setT("end-stay",CUR.endStay); setCoda();
@@ -113,6 +114,8 @@ const $ = id => document.getElementById(id);
       setT("rp-tag",CUR[t.tag]); setT("rp-riddle",CUR[t.riddle]); setT("rp-hint",CUR[t.hint]); } },
     fold:     { init:foldInit, bind:(lv)=>{ const t=lv.text||{};
       setT("fold-tag",CUR[t.tag]); setT("fold-riddle",CUR[t.riddle]); setT("fold-hint",CUR[t.hint]); } },
+    ember:    { init:emberInit, cleanup:emberStop, bind:(lv)=>{ const t=lv.text||{};
+      setT("ember-tag",CUR[t.tag]); setT("ember-riddle",CUR[t.riddle]); setT("ember-hint",CUR[t.hint]); } },
     farewell: { init:fwInit, cleanup:fwStopLoop, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
@@ -161,7 +164,7 @@ const $ = id => document.getElementById(id);
     if(d) d.innerHTML = Array.from({length:n},()=>"<i></i>").join("");
   }
   function startScenario(id){
-    stopMic(); flameStop(); warmStop(); fwStopLoop();    // 이전 시나리오 루프 정리(방어)
+    stopMic(); flameStop(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
@@ -202,6 +205,7 @@ const $ = id => document.getElementById(id);
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
   let foldCount=0, foldNeed=3, foldDone=false, foldBound=false, foldSX=0, foldSY=0, foldDrag=false;
   let revealAdv=false, revealTimer=null;   // L1/L3/L5 자동진행 — resetLevels보다 먼저 선언(TDZ 방지)
+  let emberProg=0, emberTarget=0, emberCarry=false, emberDone=false, emberBound=false, emberRaf=null;  // 불씨 옮기기
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -220,6 +224,7 @@ const $ = id => document.getElementById(id);
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
     foldReset();                                      // 종이배 접기(새벽 강)
+    emberReset();                                     // 불씨 옮기기(등불 항구)
     warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
@@ -522,6 +527,62 @@ const $ = id => document.getElementById(id);
       $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
     }
     rowRender();
+  }
+
+  /* ===== 불씨 옮기기(ember) — 등불 항구: 손 떼지 않고 *천천히* 빈 등불로. 떼면 꺼짐, 빠르면 진행 안 됨(레이트캡) ===== */
+  function emberXToPct(clientX){
+    const box=$("emberBox"); if(!box) return 0;
+    const r=box.getBoundingClientRect();
+    return Math.max(0, Math.min(100, (clientX - r.left) / r.width * 100));
+  }
+  function emberRender(){
+    const d=$("emberDot"); if(d) d.style.left = emberProg + "%";
+    const to=$("emberTo"); if(to) to.classList.toggle("lit", emberDone);
+    const g=$("emberGauge");
+    if(g) g.textContent = emberDone ? CUR.emberSet : (CUR.emberPrefix + Math.round(emberProg) + "%");
+  }
+  function emberLoop(){
+    if(!emberDone && emberCarry){
+      if(emberTarget > emberProg) emberProg = Math.min(emberTarget, emberProg + 0.9);  // 천천히만 전진(레이트캡)
+      else emberProg = emberTarget;                                                     // 손가락 뒤로 가면 따라 내려감
+      emberRender();
+      if(emberProg >= 99.5){ emberComplete(); return; }
+    }
+    emberRaf = requestAnimationFrame(emberLoop);
+  }
+  function emberStop(){ if(emberRaf){ cancelAnimationFrame(emberRaf); emberRaf=null; } }
+  function emberComplete(){
+    if(emberDone) return; emberDone=true; emberCarry=false; emberProg=100; haptic([0,80,40,120]);
+    const d=$("emberDot"); if(d) d.classList.remove("out");
+    const g=$("emberGauge"); if(g){ g.textContent = CUR.emberSet; g.classList.add("done"); }
+    emberRender(); emberStop();
+    setTimeout(advance, 3000);
+  }
+  function emberOutReset(){            // 손 떼서 꺼짐 — 처음부터(벌점 없음, 배웅에 관대)
+    emberCarry=false; emberProg=0; emberTarget=0;
+    const d=$("emberDot"); if(d){ d.classList.add("out"); d.style.left="0%";
+      setTimeout(()=>{ const e=$("emberDot"); if(e && !emberDone) e.classList.remove("out"); }, 600); }
+    const g=$("emberGauge"); if(g) g.textContent = CUR.emberOut;
+  }
+  function emberReset(){
+    emberStop(); emberProg=0; emberTarget=0; emberCarry=false; emberDone=false;
+    const d=$("emberDot"); if(d){ d.classList.remove("out"); d.style.left="0%"; }
+    const to=$("emberTo"); if(to) to.classList.remove("lit");
+    const g=$("emberGauge"); if(g){ g.classList.remove("done"); g.textContent=CUR.emberPrefix+"0%"; }
+  }
+  function emberInit(){
+    if(!emberBound){
+      emberBound=true;
+      const box=$("emberBox");
+      box.addEventListener("pointerdown",e=>{ if(emberDone) return; e.preventDefault(); emberCarry=true; emberTarget=emberXToPct(e.clientX); });
+      box.addEventListener("pointermove",e=>{ if(emberCarry && !emberDone){ e.preventDefault(); emberTarget=emberXToPct(e.clientX); } });
+      const lift=()=>{ if(emberCarry && !emberDone && emberProg < 99.5) emberOutReset(); else emberCarry=false; };
+      box.addEventListener("pointerup",lift);
+      box.addEventListener("pointerleave",lift);
+      box.addEventListener("pointercancel",lift);
+    }
+    emberReset();
+    emberStop(); emberRaf=requestAnimationFrame(emberLoop);
   }
 
   /* ===== 종이배 접기(fold) — 새벽 강: 종이를 *쓸어서* 한 번씩 접는다(세 번). 단일 포인터 드래그 = 터치/마우스 공용 ===== */
