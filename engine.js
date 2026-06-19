@@ -211,14 +211,15 @@ const $ = id => document.getElementById(id);
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
   function showView(v){
     curView=v;
-    ["play","hub","gate"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
+    ["play","hub","gate","book"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
     const mb=$("menuBtn"); if(mb) mb.classList.toggle("on", v==="hub");   // 허브 열림=강조(언어 토글처럼)
     refreshTitle();
   }
   /* 상단 타이틀: play=현재 시나리오 제목 / hub·gate=게임 제목("밤바다") */
   function refreshTitle(){
     const t=$("t-title"); if(!t) return;
-    t.textContent = (curView==="play") ? (CUR[RUN.scenario.titleKey]||CUR.title) : CUR.title;
+    t.textContent = (curView==="play") ? (CUR[RUN.scenario.titleKey]||CUR.title)
+                  : (curView==="book") ? (CUR.storyTitle||CUR.title) : CUR.title;
   }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
@@ -234,6 +235,32 @@ const $ = id => document.getElementById(id);
       card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
       list.appendChild(card);
     });
+    // 이야기(단편 소설) — 곁가지 아래, 구별되는 표시(📖 + 점선 카드)
+    const div=document.createElement("div"); div.className="hub-divider"; div.textContent=CUR.libraryLabel||""; list.appendChild(div);
+    const book=document.createElement("button"); book.className="hubcard bookcard";
+    book.innerHTML="📖 "+(CUR.storyTitle||"")+' <span class="hubcount story">'+(CUR.storyTag||"")+'</span>';
+    book.addEventListener("click", openBook);
+    list.appendChild(book);
+  }
+  function openBook(){
+    const page=$("bookPage");
+    if(page){
+      page.innerHTML="";
+      const h=document.createElement("div"); h.className="book-title"; h.textContent=CUR.storyTitle||""; page.appendChild(h);
+      const paras = CUR.storyText || (I18N.ko && I18N.ko.storyText) || [];
+      paras.forEach((para,i)=>{
+        const sep=(para==="✶");
+        const el=document.createElement(sep?"div":"p");
+        el.className = sep ? "book-sep" : "book-para";
+        el.textContent = para;
+        el.style.opacity="0";
+        page.appendChild(el);
+        setTimeout(()=>{ el.style.transition="opacity .35s ease"; el.style.opacity="1"; }, 70*i);  // 펼치면 촤르륵
+      });
+    }
+    setT("bookBack", CUR.backToHarbor);
+    window.scrollTo(0,0);
+    showView("book");
   }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
@@ -281,6 +308,7 @@ const $ = id => document.getElementById(id);
   });
   $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); showView("play"); });
   $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); buildHub(); showView("hub"); });
+  { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
