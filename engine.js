@@ -22,7 +22,7 @@ const $ = id => document.getElementById(id);
     setT("l2-tag",CUR.l2tag); setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
     setT("l2-tiny",CUR.l2tiny); setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
     setT("l3-tag",CUR.l3tag); setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret);
-    setT("l3-hint",CUR.l3hint); setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
+    setT("l3-hint",CUR.l3hint); setT("l3-fallback-hint",CUR.l3fbhint); setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
     setT("l4-tag",CUR.l4tag); setT("l4-riddle",CUR.l4riddle); setT("l4-hint",CUR.l4hint);
     setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar); setT("windGauge",CUR.l4windPrefix+"0%");
     setT("l5-tag",CUR.l5tag); setT("l5-riddle",CUR.l5riddle); setT("l5-hint",CUR.l5hint);
@@ -67,6 +67,7 @@ const $ = id => document.getElementById(id);
     $(ORDER[idx]).classList.add("active");
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
+    if(ORDER[idx]==="lv3") tiltInit();        // 기울이기/슬라이더 폴백 준비
     if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
     if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
     if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
@@ -80,11 +81,13 @@ const $ = id => document.getElementById(id);
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
+  let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
     $("pressBox").classList.remove("lit");            // L1
     $("tiltBox").classList.remove("show");            // L3
+    { const tf=$("tiltFallback"); if(tf) tf.style.display="none"; tiltGotEvent=false; }
     $("gauge").textContent = CUR.gaugeInit;
     sailDone=false; oarFill=0; setSail(0,0);          // L4
     $("windBtn").style.display=""; $("oarBtn").style.display="none";
@@ -115,30 +118,43 @@ const $ = id => document.getElementById(id);
     box.addEventListener("mouseleave",end);
   })();
 
-  /* ===== LEVEL 3 — 기울이기(deviceorientation) ===== */
-  (function(){
-    const box=$("tiltBox"), gauge=$("gauge"), btn=$("sensorBtn");
-    function onTilt(e){
-      const g = Math.round(e.gamma||0);
-      gauge.textContent = CUR.gaugePrefix + g + "°";
-      box.classList.toggle("show", Math.abs(g) > 40);
+  /* ===== LEVEL 3 — 기울이기(deviceorientation) + 슬라이더 폴백(몰입형 미러) ===== */
+  function tiltReveal(){ $("tiltBox").classList.add("show"); }
+  function tiltOnTilt(e){
+    tiltGotEvent = true;
+    const g = Math.round(e.gamma||0);
+    $("gauge").textContent = CUR.gaugePrefix + g + "°";
+    if(Math.abs(g) > 40) tiltReveal();
+  }
+  function tiltShowFallback(){ $("tiltFallback").style.display="block"; }
+  function tiltEnable(){
+    if(typeof DeviceOrientationEvent!=="undefined" &&
+       typeof DeviceOrientationEvent.requestPermission==="function"){
+      DeviceOrientationEvent.requestPermission().then(p=>{
+        if(p==="granted"){ window.addEventListener("deviceorientation",tiltOnTilt); $("sensorBtn").style.display="none"; }
+        else tiltShowFallback();
+      }).catch(tiltShowFallback);
+    } else {
+      window.addEventListener("deviceorientation",tiltOnTilt); $("sensorBtn").style.display="none";
     }
-    function enable(){
-      if(typeof DeviceOrientationEvent!=="undefined" &&
-         typeof DeviceOrientationEvent.requestPermission==="function"){
-        DeviceOrientationEvent.requestPermission().then(p=>{
-          if(p==="granted"){ window.addEventListener("deviceorientation",onTilt); btn.style.display="none"; }
-        }).catch(()=>{});
-      } else {
-        window.addEventListener("deviceorientation",onTilt); btn.style.display="none";
+  }
+  function tiltInit(){
+    if(!tiltBound){
+      tiltBound=true;
+      $("sensorBtn").addEventListener("click",tiltEnable);
+      $("tiltSlider").addEventListener("input",e=>{
+        const v=+e.target.value;
+        if(v<=8 || v>=92) tiltReveal();          // 끝까지 밀면(기울이면) 드러남(폴백=같은 추론)
+      });
+      if(typeof DeviceOrientationEvent==="undefined"){
+        tiltShowFallback();                        // 센서 API 없음(데스크탑 등) → 즉시 폴백
+      } else if(typeof DeviceOrientationEvent.requestPermission!=="function"){
+        window.addEventListener("deviceorientation",tiltOnTilt);   // 안드로이드/일반
       }
     }
-    btn.addEventListener("click",enable);
-    if(typeof DeviceOrientationEvent!=="undefined" &&
-       typeof DeviceOrientationEvent.requestPermission!=="function"){
-      window.addEventListener("deviceorientation",onTilt);
-    }
-  })();
+    clearTimeout(tiltTimer);
+    tiltTimer = setTimeout(()=>{ if(!tiltGotEvent) tiltShowFallback(); }, 4000);  // 이벤트 없으면 폴백 노출
+  }
 
   /* ===== LEVEL 4 — 불기(돛): 마이크 소리로 돛 채우기 ===== */
   function setSail(fill){
