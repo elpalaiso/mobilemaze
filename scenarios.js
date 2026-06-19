@@ -48,4 +48,13 @@ const SCENARIOS = {
     ],
     ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd", coda:"lanternCoda" },
   },
+  /* 재회 — 먼저 건너간 이에게 가는 손님. ember 트릭 재사용(메시지 매니페스트 오버라이드) + 긴 엔딩(seqKey). */
+  reunion: {
+    id: "reunion",
+    titleKey: "sc_reunion",
+    levels: [
+      { sec:"lvEmber", trick:"ember", text:{ tag:"reunionTag", riddle:"reunionRiddle", hint:"reunionHint", prefix:"reunionPrefix", set:"reunionSet", out:"reunionOut" } },
+    ],
+    ending: { title:"reunionDoneTitle", body:"reunionDoneBody", end:"reunionDoneEnd", coda:"reunionCoda", seqKey:"reunionSeq" },
+  },
 };

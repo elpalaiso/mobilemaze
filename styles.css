@@ -133,6 +133,11 @@
   /* ===== 엔딩 3박: 도착 → 잔류 → 공유 카드 ===== */
   .ending{ position:relative; }
   .end-arrival p{ margin:8px 0 0; }
+  /* 긴 엔딩 시퀀스 — 한 줄씩 자막식 */
+  .end-seq{ min-height:1.6em; margin:22px 0 0; font-size:16px; color:var(--ink);
+    opacity:0; transition:opacity .36s ease; white-space:pre-line; line-height:1.7; }
+  .end-seq.in{ opacity:1; }
+  .end-seq:empty{ margin:0; min-height:0; }
   .end-stay, .end-card{ opacity:0; transition:opacity 1.5s ease; }
   .end-stay.in, .end-card.in{ opacity:1; }
   .end-stay{ margin-top:26px; }

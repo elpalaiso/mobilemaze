@@ -142,19 +142,40 @@ const $ = id => document.getElementById(id);
   /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
+  /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
+  function curLevelText(name, fb){ const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
   function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
   function resetEnding(){
     endingTimers.forEach(t=>clearTimeout(t)); endingTimers=[];
     const s=$("endStayBeat"), c=$("endCard");
     if(s) s.classList.remove("in"); if(c) c.classList.remove("in");
+    const sq=$("endSeq"); if(sq){ sq.classList.remove("in"); sq.textContent=""; }
   }
   function runEnding(){
     resetEnding();
     // 활성 시나리오 엔딩 카피 주입(허브로 시나리오가 바뀐 경우 대비)
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd"));
     $("done-body").innerHTML = endK("body","doneBody"); setCoda();
-    endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
-    endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 2000));
+    const e=RUN.scenario && RUN.scenario.ending;
+    const seqArr = (e && e.seqKey && Array.isArray(CUR[e.seqKey])) ? CUR[e.seqKey] : null;
+    const seqEl=$("endSeq");
+    if(seqArr && seqEl){
+      // 긴 엔딩: 도착 → 한 줄씩 펼쳐짐(자막식) → 잔류 → 카드
+      let t=1400;
+      seqArr.forEach(line=>{
+        endingTimers.push(setTimeout(()=>{
+          seqEl.classList.remove("in");
+          setTimeout(()=>{ seqEl.textContent=line; seqEl.classList.add("in"); }, 360);
+        }, t));
+        t += (line.length <= 10 ? 1500 : 2200);
+      });
+      endingTimers.push(setTimeout(()=>{ if(seqEl) seqEl.classList.remove("in"); }, t));
+      endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, t+700));
+      endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, t+1900));
+    } else {
+      endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
+      endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 2000));
+    }
   }
   function advance(){ show(curIdx+1); }
   function loadProgress(){ return scenarioState().step || 0; }
@@ -550,7 +571,7 @@ const $ = id => document.getElementById(id);
     const d=$("emberDot"); if(d) d.style.left = (emberX0 + (emberX1-emberX0)*emberProg/100) + "px";
     const to=$("emberTo"); if(to) to.classList.toggle("lit", emberDone);
     const g=$("emberGauge");
-    if(g) g.textContent = emberDone ? CUR.emberSet : (CUR.emberPrefix + Math.round(emberProg) + "%");
+    if(g) g.textContent = emberDone ? curLevelText("set","emberSet") : (curLevelText("prefix","emberPrefix") + Math.round(emberProg) + "%");
   }
   function emberLoop(){
     if(!emberDone && emberCarry){
@@ -574,7 +595,7 @@ const $ = id => document.getElementById(id);
     const d=$("emberDot"); if(d){ d.classList.add("out");
       setTimeout(()=>{ const e=$("emberDot"); if(e && !emberDone) e.classList.remove("out"); }, 600); }
     emberRender();
-    const g=$("emberGauge"); if(g) g.textContent = CUR.emberOut;   // render의 0% 덮어 꺼짐 메시지
+    const g=$("emberGauge"); if(g) g.textContent = curLevelText("out","emberOut");   // render의 0% 덮어 꺼짐 메시지
   }
   function emberReset(){
     emberStop(); emberProg=0; emberTarget=0; emberCarry=false; emberDone=false;
