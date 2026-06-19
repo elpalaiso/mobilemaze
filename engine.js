@@ -30,6 +30,7 @@ const $ = id => document.getElementById(id);
     SAVE.lang=lang; persist();
 
     setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
+    { const mb=$("menuBtn"); if(mb) mb.textContent="☰ "+CUR.menu; }
     const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
     // 트릭 chrome (레벨 콘텐츠는 매니페스트 → registry bind 가 담당)
     setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
