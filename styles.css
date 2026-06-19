@@ -89,3 +89,8 @@
   .dots i.on{background:var(--accent);}
   .reset{display:block; margin:0 auto 14px; background:transparent; color:var(--dim);
     border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:11px;}
+  /* 무막힘 힌트 — 무동작 시 단계적 강조 */
+  .hint.hot{ color:var(--accent); }
+  .nudge{ animation:nudgepulse 1.15s ease-in-out infinite; }
+  @keyframes nudgepulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(227,165,66,0); }
+    50%{ box-shadow:0 0 0 3px rgba(227,165,66,.45); } }

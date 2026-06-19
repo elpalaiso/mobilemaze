@@ -86,6 +86,7 @@ const $ = id => document.getElementById(id);
     if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
     if(ORDER[idx]==="lv8") fwInit();          // 작별 시퀀스 준비
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
+    resetIdle();
   }
   function advance(){ show(curIdx+1); }
   function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
@@ -97,6 +98,7 @@ const $ = id => document.getElementById(id);
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false;
+  let idleT1=null, idleT2=null;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -438,3 +440,21 @@ const $ = id => document.getElementById(id);
     }
     fwShow();
   }
+
+  /* ===== 무막힘 힌트 — 무동작 28s→힌트 강조, 70s→조작부 펄스. 어떤 탭에도 리셋 ===== */
+  function activeHint(){ const n=ORDER[curIdx].replace("lv",""); return $("l"+n+"-hint"); }
+  function clearNudge(){
+    document.querySelectorAll(".hint.hot").forEach(e=>e.classList.remove("hot"));
+    document.querySelectorAll(".nudge").forEach(e=>e.classList.remove("nudge"));
+  }
+  function armIdle(){
+    clearTimeout(idleT1); clearTimeout(idleT2);
+    if(ORDER[curIdx]==="done") return;
+    idleT1=setTimeout(()=>{ const h=activeHint(); if(h) h.classList.add("hot"); }, 28000);
+    idleT2=setTimeout(()=>{
+      const map={ lv1:"pressBox", lv3:"sensorBtn", lv4:"windBtn", lv5:"routeCanvas", lv6:"flameBox", lv7:"oarL", lv8:"fwBtn" };
+      const id=map[ORDER[curIdx]], el=id&&$(id); if(el) el.classList.add("nudge");
+    }, 70000);
+  }
+  function resetIdle(){ clearNudge(); armIdle(); }
+  document.addEventListener("pointerdown", resetIdle, true);
