@@ -110,3 +110,26 @@
   #gate{ padding:14px 0; }
   #gatePrompt{ text-align:center; color:var(--accent); font-size:17px; letter-spacing:.04em; margin:18px 0 24px; }
   #gate .hubcard{ display:block; width:100%; text-align:center; margin:0 0 10px; }
+  /* ===== 엔딩 3박: 도착 → 잔류 → 공유 카드 ===== */
+  .ending{ position:relative; }
+  .end-arrival p{ margin:8px 0 0; }
+  .end-stay, .end-card{ opacity:0; transition:opacity 1.5s ease; }
+  .end-stay.in, .end-card.in{ opacity:1; }
+  .end-stay{ margin-top:26px; }
+  #end-stay{ color:var(--dim); font-size:15px; margin:14px 0 0; white-space:pre-line; }
+  /* 부두 불빛 — 절대 opacity 0 안 감(꺼짐/죽음 회피), 노 펄스보다 느린 호흡 */
+  .dock-light{ width:11px; height:11px; border-radius:50%; margin:0 auto;
+    background:#ffd9a0; box-shadow:0 0 12px 4px rgba(255,200,120,.55);
+    animation:dock-breathe 4.2s ease-in-out infinite; }
+  @keyframes dock-breathe{ 0%,100%{ opacity:.78; box-shadow:0 0 10px 3px rgba(255,200,120,.45); }
+    50%{ opacity:1; box-shadow:0 0 16px 6px rgba(255,200,120,.70); } }
+  /* 공유 카드 — 비-트랜잭션: 채운 배경·그림자 없음, 버튼은 동작의 연장 */
+  .end-card{ margin-top:30px; padding-top:24px; border-top:1px solid var(--line); }
+  .end-card h3{ color:var(--ink); font-weight:500; font-size:16px; letter-spacing:.03em; margin:0; }
+  .end-card p{ color:var(--dim); font-size:13px; margin:10px 0 0; }
+  .share-btn{ display:block; margin:34px auto 0; background:transparent; border:0;
+    color:var(--accent); font-size:15px; letter-spacing:.02em; padding:6px 4px; }
+  .share-btn:active{ text-decoration:underline; }
+  .back-harbor{ display:block; margin:18px auto 0; background:transparent; border:0;
+    color:var(--dim); opacity:.45; font-size:12px; padding:4px; }
+  #done-end{ color:var(--dim); font-size:12px; margin-top:22px; opacity:.5; }

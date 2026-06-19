@@ -50,7 +50,7 @@
       l6shelterBtn:"🤚 한 손으로 가리기 (길게)",
       l6set:"불꽃이 잦아들지 않는다… 곁에 온기가 머문다 🕯️",
       l7tag:"폭풍 1 · 노 젓기",
-      l7riddle:"🌊 파도가 거세다. 혼자선 못 건넌다.\n동행과 박자를 맞춰, 좌우로 번갈아 노를 저어라.",
+      l7riddle:"🌊 파도가 거세다. 혼자선 못 건넌다.\n둘의 박자로 — 좌우로 번갈아 노를 저어라.",
       l7hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
       l7rowPrefix:"전진: ",
       l7set:"폭풍을 넘었다… 멀리, 별이 보인다 ✦",
@@ -67,6 +67,9 @@
       snow1tag:"첫눈 호수 · 떨고 있는", snow1riddle:"❄️ 첫눈이 내린 호수. 늙은 개가 가만히 떨고 있다.\n곁에 가만히, 오래 손을 대어라.", snow1press:"가만히 — 손을 대본다", snow1reveal:"온기", snow1hint:"힌트: 화면을 *길게* 눌러 온기를 나눠라.", snow_a1:"온기",
       snow2tag:"첫눈 호수 · 잔물결", snow2riddle:"🚣 개가 배에 올랐다. 잔잔한 호수를 건너자.\n좌우로 번갈아, 천천히 노를 저어라.", snow2hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
       warmPrefix:"온기: ", warmSet:"떨림이 멎었다… 배에 오른다 🐕",
+      endStay:"이쪽은 — 그대로 남아, 불을 켜 둔다.",
+      shareTitle:"오늘 밤, 누군가가 무사히 건넜습니다.", shareBody:"건너편엔 등불 하나. 다음 사람의 첫 밤이 그 불로 밝습니다.",
+      shareBtn:"🕯️ 등불을 다음 사람에게 →", shareText:"누군가를 건너편까지 — 밤바다를 건너보세요.", backToHarbor:"항구로 돌아가기",
       l1answer:"달빛", l2answer:"등대", l3answer:"수평선", l5answer:"북극성",
       answers:["달빛","등대","수평선","북극성"]
     },
@@ -120,7 +123,7 @@
       l6shelterBtn:"🤚 shield with one hand (hold)",
       l6set:"The flame holds steady… a warmth stays beside you 🕯️",
       l7tag:"STORM 1 · row",
-      l7riddle:"🌊 The waves are fierce — you can't cross alone.\nMatch your companion's rhythm: pull the oars, left and right in turn.",
+      l7riddle:"🌊 The waves are fierce — you can't cross alone.\nTwo find the rhythm: pull the oars, left and right in turn.",
       l7hint:"Hint: tap the *glowing* oar, alternating left and right.",
       l7rowPrefix:"progress: ",
       l7set:"Through the storm… far off, stars appear ✦",
@@ -137,6 +140,9 @@
       snow1tag:"SNOW LAKE · the shivering one", snow1riddle:"❄️ A lake under first snow. An old dog shivers, still.\nRest your hand beside it — long and quiet.", snow1press:"rest — your hand", snow1reveal:"warmth", snow1hint:"Hint: *press and hold* to share warmth.", snow_a1:"warmth",
       snow2tag:"SNOW LAKE · still ripples", snow2riddle:"🚣 The dog has boarded. Cross the still lake.\nPull the oars, left and right in turn.", snow2hint:"Hint: tap the *glowing* oar, alternating.",
       warmPrefix:"warmth: ", warmSet:"The shivering stops… it climbs aboard 🐕",
+      endStay:"This side — someone stays, keeps the light.",
+      shareTitle:"Tonight, someone made it across.", shareBody:"On the far side, one lantern. It will light the next person's first night.",
+      shareBtn:"🕯️ Pass the lantern on →", shareText:"Carry someone across the night sea.", backToHarbor:"Back to the harbor",
       l1answer:"moonlight", l2answer:"lighthouse", l3answer:"horizon", l5answer:"polaris",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }

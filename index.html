@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>밤바다</title>
-<link rel="stylesheet" href="styles.css?v=1781863304" />
+<link rel="stylesheet" href="styles.css?v=1781870239" />
 </head>
 <body>
 <div class="wrap">
@@ -159,12 +159,24 @@
     <div class="hint" id="warm-hint"></div>
   </section>
 
-  <!-- CLEAR -->
+  <!-- CLEAR — 엔딩 3박: 도착 → 잔류 → 공유 카드 -->
   <section class="level" id="done">
-    <div class="clear">
-      <h2 id="done-title"></h2>
-      <p id="done-body"></p>
-      <p id="done-end" style="color:var(--dim);font-size:12px;margin-top:18px;"></p>
+    <div class="clear ending">
+      <div class="end-arrival">
+        <h2 id="done-title"></h2>
+        <p id="done-body"></p>
+      </div>
+      <div class="end-stay" id="endStayBeat">
+        <div class="dock-light"></div>
+        <p id="end-stay"></p>
+      </div>
+      <div class="end-card" id="endCard">
+        <h3 id="share-title"></h3>
+        <p id="share-body"></p>
+        <button id="shareBtn" class="share-btn"></button>
+        <button id="backHarborBtn" class="back-harbor"></button>
+      </div>
+      <p id="done-end"></p>
     </div>
   </section>
   </div><!-- /play -->
@@ -183,9 +195,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=1781863304"></script>
-<script src="scenarios.js?v=1781863304"></script>
-<script src="engine.js?v=1781863304"></script>
-<script src="version.js?v=1781863304"></script>
+<script src="levels.js?v=1781870239"></script>
+<script src="scenarios.js?v=1781870239"></script>
+<script src="engine.js?v=1781870239"></script>
+<script src="version.js?v=1781870239"></script>
 </body>
 </html>

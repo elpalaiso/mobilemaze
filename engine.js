@@ -41,6 +41,9 @@ const $ = id => document.getElementById(id);
     setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd); setT("hubTitle",CUR.hubTitle);
+    setT("end-stay",CUR.endStay);
+    setT("share-title",CUR.shareTitle); setT("share-body",CUR.shareBody);
+    setT("shareBtn",CUR.shareBtn); setT("backHarborBtn",CUR.backToHarbor);
     setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -124,6 +127,19 @@ const $ = id => document.getElementById(id);
     const nt=lvl ? TRICKS[lvl.trick] : null;
     if(nt){ if(nt.bind) nt.bind(lvl); if(nt.init) nt.init(); }
     const _st=scenarioState(); _st.step=idx; if(ORDER[idx]==="done") _st.cleared=true; persist();
+    if(ORDER[idx]==="done") runEnding(); else resetEnding();
+  }
+  /* ===== 엔딩 3박 연출: 도착 → (hold) → 잔류 비트 → (hold) → 공유 카드 ===== */
+  let endingTimers=[];
+  function resetEnding(){
+    endingTimers.forEach(t=>clearTimeout(t)); endingTimers=[];
+    const s=$("endStayBeat"), c=$("endCard");
+    if(s) s.classList.remove("in"); if(c) c.classList.remove("in");
+  }
+  function runEnding(){
+    resetEnding();
+    endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 2000));
+    endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 6000));
   }
   function advance(){ show(curIdx+1); }
   function loadProgress(){ return scenarioState().step || 0; }
@@ -205,6 +221,14 @@ const $ = id => document.getElementById(id);
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
   });
+  /* 공유 = 등불을 다음 사람에게(데려다주기의 잔류 제스처). Web Share + 클립보드 폴백. */
+  { const sb=$("shareBtn"); if(sb) sb.addEventListener("click", async ()=>{
+      const data={ text:CUR.shareText, url:location.href.split("#")[0] };
+      try{ if(navigator.share){ await navigator.share(data); return; } }catch(e){ return; }   // 사용자 취소 포함 → 조용히
+      try{ await navigator.clipboard.writeText(data.text+" "+data.url);
+        sb.textContent="🔗"; setTimeout(()=>setT("shareBtn",CUR.shareBtn),1500); }catch(e){}
+    }); }
+  { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
 
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
   (function(){
