@@ -34,6 +34,7 @@ const SCENARIOS = {
     id: "dawn_river",
     titleKey: "sc_dawn",
     levels: [
+      { sec:"lvFold",   trick:"fold",   text:{ tag:"foldTag", riddle:"foldRiddle", hint:"foldHint" } },
       { sec:"lvRowPar", trick:"rowpar", text:{ tag:"dawnTag", riddle:"dawnRiddle", hint:"dawnHint" } },
     ],
     ending: { title:"dawnDoneTitle", body:"dawnDoneBody", end:"dawnDoneEnd", coda:"dawnCoda" },

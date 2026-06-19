@@ -40,6 +40,7 @@ const $ = id => document.getElementById(id);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
     setT("rpGauge",CUR.rpPrefix+"0%"); setT("rpSyncBtn",CUR.rpSyncBtn);
+    setT("foldGauge",CUR.foldPrefix+"0/3");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
     setT("end-stay",CUR.endStay); setCoda();
@@ -110,6 +111,8 @@ const $ = id => document.getElementById(id);
       setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
     rowpar:   { init:rpInit, bind:(lv)=>{ const t=lv.text||{};
       setT("rp-tag",CUR[t.tag]); setT("rp-riddle",CUR[t.riddle]); setT("rp-hint",CUR[t.hint]); } },
+    fold:     { init:foldInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("fold-tag",CUR[t.tag]); setT("fold-riddle",CUR[t.riddle]); setT("fold-hint",CUR[t.hint]); } },
     farewell: { init:fwInit, cleanup:fwStopLoop, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
@@ -197,6 +200,7 @@ const $ = id => document.getElementById(id);
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
+  let foldCount=0, foldNeed=3, foldDone=false, foldBound=false, foldSX=0, foldSY=0, foldDrag=false;
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -213,6 +217,7 @@ const $ = id => document.getElementById(id);
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
+    foldReset();                                      // 종이배 접기(새벽 강)
     warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
@@ -510,6 +515,49 @@ const $ = id => document.getElementById(id);
       $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
     }
     rowRender();
+  }
+
+  /* ===== 종이배 접기(fold) — 새벽 강: 종이를 *쓸어서* 한 번씩 접는다(세 번). 단일 포인터 드래그 = 터치/마우스 공용 ===== */
+  function foldRender(){
+    const p=$("foldPaper");
+    if(p){
+      p.textContent = foldDone ? "🛶" : "📄";
+      const s = foldDone ? 1 : (1 - 0.16*foldCount);
+      const r = foldDone ? 0 : (foldCount*4 - 4);
+      p.style.transform = "scale("+s.toFixed(2)+") rotate("+r+"deg)";
+    }
+    const g=$("foldGauge");
+    if(g) g.textContent = foldDone ? CUR.foldSet : (CUR.foldPrefix + foldCount + "/" + foldNeed);
+  }
+  function foldStroke(){
+    if(foldDone) return;
+    foldCount++; haptic(20);
+    const p=$("foldPaper"); if(p){ p.classList.add("crease"); setTimeout(()=>p.classList.remove("crease"),160); }
+    foldRender();
+    if(foldCount>=foldNeed) foldComplete();
+  }
+  function foldComplete(){
+    if(foldDone) return; foldDone=true; haptic([0,80,40,120]);
+    foldRender();
+    setTimeout(advance, 1000);
+  }
+  function foldReset(){
+    foldCount=0; foldDone=false; foldDrag=false;
+    const p=$("foldPaper"); if(p){ p.style.transform=""; p.textContent="📄"; }
+    if($("foldGauge")) foldRender();
+  }
+  function foldInit(){
+    if(!foldBound){
+      foldBound=true;
+      const box=$("foldBox");
+      box.addEventListener("pointerdown",e=>{ e.preventDefault(); foldDrag=true; foldSX=e.clientX; foldSY=e.clientY; });
+      box.addEventListener("pointerup",e=>{
+        if(!foldDrag) return; foldDrag=false;
+        if(Math.hypot(e.clientX-foldSX, e.clientY-foldSY) > 40) foldStroke();   // 결정적 쓸기 = 한 번 접기
+      });
+      box.addEventListener("pointerleave",()=>{ foldDrag=false; });
+    }
+    foldRender();
   }
 
   /* ===== 나란히 젓기(rowpar) — 새벽 강: 아이와 박자 맞춰 두 노를 *동시에*. 단일 포인터=탭 폴백(같은 게이지) ===== */

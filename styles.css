@@ -88,6 +88,11 @@
   .boat{font-size:34px; transition:transform .15s;}
   .rowmeter{height:8px; background:var(--line); border-radius:5px; margin-top:12px; overflow:hidden;}
   .rowmeter .fill{height:100%; width:0%; background:var(--accent); transition:width .15s;}
+  /* 종이배 접기(fold) — 쓸어서 접기 */
+  .foldbox{ text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .paper{ font-size:48px; line-height:1; display:inline-block; transition:transform .18s ease, filter .16s; }
+  .paper.crease{ filter:brightness(1.5); }
   .clear{text-align:center; padding:30px 12px;}
   .clear h2{color:var(--accent); margin:0 0 8px;}
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
