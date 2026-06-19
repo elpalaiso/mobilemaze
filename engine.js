@@ -57,6 +57,7 @@ const $ = id => document.getElementById(id);
     const _l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
     if(_l && TRICKS[_l.trick] && TRICKS[_l.trick].bind) TRICKS[_l.trick].bind(_l);
     const _hub=$("hub"); if(_hub && _hub.style.display!=="none") buildHub();   // 허브 열려있으면 카드도 새 언어로
+    const _bk=$("book"); if(_bk && _bk.style.display!=="none") renderBook(false);   // 책 열려있으면 내용·버튼도 새 언어로
   }
   document.querySelectorAll(".langbar button").forEach(b=>
     b.addEventListener("click",()=>applyLang(b.dataset.lang)));
@@ -242,7 +243,7 @@ const $ = id => document.getElementById(id);
     book.addEventListener("click", openBook);
     list.appendChild(book);
   }
-  function openBook(){
+  function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글 재렌더)
     const page=$("bookPage");
     if(page){
       page.innerHTML="";
@@ -252,15 +253,13 @@ const $ = id => document.getElementById(id);
         const el=document.createElement(sep?"div":"p");
         el.className = sep ? "book-sep" : "book-para";
         el.textContent = para;
-        el.style.opacity="0";
+        if(cascade){ el.style.opacity="0"; setTimeout(()=>{ el.style.transition="opacity .35s ease"; el.style.opacity="1"; }, 70*i); }  // 펼치면 촤르륵
         page.appendChild(el);
-        setTimeout(()=>{ el.style.transition="opacity .35s ease"; el.style.opacity="1"; }, 70*i);  // 펼치면 촤르륵
       });
     }
     setT("bookBack", CUR.backToHarbor);
-    window.scrollTo(0,0);
-    showView("book");
   }
+  function openBook(){ renderBook(true); window.scrollTo(0,0); showView("book"); }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
