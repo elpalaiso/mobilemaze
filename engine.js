@@ -593,6 +593,7 @@ const $ = id => document.getElementById(id);
       box.addEventListener("pointercancel",lift);
     }
     emberMeasure(); emberReset();
+    requestAnimationFrame(()=>{ emberMeasure(); if(!emberCarry && !emberDone) emberRender(); });  // 레이아웃 안정 후 재측정(초기 위치 보정)
     emberStop(); emberRaf=requestAnimationFrame(emberLoop);
   }
 
