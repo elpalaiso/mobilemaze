@@ -17,6 +17,7 @@ const SCENARIOS = {
       { sec:"lv7", trick:"row",      text:{ tag:"l7tag", riddle:"l7riddle", hint:"l7hint" } },
       { sec:"lv8", trick:"farewell", text:{ tag:"l8tag", hint:"l8hint" } },
     ],
+    ending: { title:"doneTitle", body:"doneBody", end:"doneEnd" },
   },
   /* 첫 신규 시나리오(slice1: reuse-only 검증판). 새 트릭 '체온 나누기' + 전용 엔딩은 다음 단계. */
   snow_lake: {
@@ -26,5 +27,6 @@ const SCENARIOS = {
       { sec:"lvWarm", trick:"warm", text:{ tag:"snow1tag", riddle:"snow1riddle", hint:"snow1hint" } },
       { sec:"lv7",    trick:"row",  text:{ tag:"snow2tag", riddle:"snow2riddle", hint:"snow2hint" } },
     ],
+    ending: { title:"snowDoneTitle", body:"snowDoneBody", end:"snowDoneEnd", coda:"snowCoda" },
   },
 };

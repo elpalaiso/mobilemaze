@@ -40,12 +40,12 @@ const $ = id => document.getElementById(id);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
-    setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd); setT("hubTitle",CUR.hubTitle);
-    setT("end-stay",CUR.endStay);
+    setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
+    setT("end-stay",CUR.endStay); setCoda();
     setT("share-title",CUR.shareTitle); setT("share-body",CUR.shareBody);
     setT("shareBtn",CUR.shareBtn); setT("backHarborBtn",CUR.backToHarbor);
     setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
-    $("done-body").innerHTML = CUR.doneBody;
+    $("done-body").innerHTML = endK("body","doneBody");
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
     document.querySelectorAll(".langbar button").forEach(b=>
@@ -130,7 +130,10 @@ const $ = id => document.getElementById(id);
     if(ORDER[idx]==="done") runEnding(); else resetEnding();
   }
   /* ===== 엔딩 3박 연출: 도착 → (hold) → 잔류 비트 → (hold) → 공유 카드 ===== */
+  /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
+  function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
+  function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
   function resetEnding(){
     endingTimers.forEach(t=>clearTimeout(t)); endingTimers=[];
     const s=$("endStayBeat"), c=$("endCard");
@@ -138,6 +141,9 @@ const $ = id => document.getElementById(id);
   }
   function runEnding(){
     resetEnding();
+    // 활성 시나리오 엔딩 카피 주입(허브로 시나리오가 바뀐 경우 대비)
+    setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd"));
+    $("done-body").innerHTML = endK("body","doneBody"); setCoda();
     endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
     endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 2000));
   }

@@ -116,6 +116,8 @@
   .end-stay, .end-card{ opacity:0; transition:opacity 1.5s ease; }
   .end-stay.in, .end-card.in{ opacity:1; }
   .end-stay{ margin-top:26px; }
+  #end-coda{ color:var(--ink); opacity:.82; font-size:14px; margin:14px 0 0; white-space:pre-line; }
+  #end-coda:empty{ display:none; margin:0; }
   #end-stay{ color:var(--dim); font-size:15px; margin:14px 0 0; white-space:pre-line; }
   /* 부두 불빛 — 절대 opacity 0 안 감(꺼짐/죽음 회피), 노 펄스보다 느린 호흡 */
   .dock-light{ width:11px; height:11px; border-radius:50%; margin:0 auto;
