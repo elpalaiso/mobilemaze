@@ -141,15 +141,36 @@ const $ = id => document.getElementById(id);
   /* ===== 엔딩 3박 연출: 도착 → (hold) → 잔류 비트 → (hold) → 공유 카드 ===== */
   /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
+  let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
   function curLevelText(name, fb){ const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
   function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
+  function seqClearTimer(){ if(seqTimer){ clearTimeout(seqTimer); seqTimer=null; } }
   function resetEnding(){
     endingTimers.forEach(t=>clearTimeout(t)); endingTimers=[];
+    seqClearTimer(); seqLines=null; seqIdx=0; seqFinished=false;
     const s=$("endStayBeat"), c=$("endCard");
     if(s) s.classList.remove("in"); if(c) c.classList.remove("in");
-    const sq=$("endSeq"); if(sq){ sq.classList.remove("in"); sq.textContent=""; }
+    const sq=$("endSeq"); if(sq) sq.innerHTML="";
+  }
+  function seqStep(){     // 다음 줄을 *추가*(누적). 탭/타이머 공용.
+    seqClearTimer();
+    const seqEl=$("endSeq");
+    if(!seqLines || !seqEl) return;
+    if(seqIdx >= seqLines.length){ seqFinish(); return; }
+    const line=seqLines[seqIdx]; seqIdx++;
+    const p=document.createElement("p"); p.className="seq-line"; p.textContent=line;
+    seqEl.appendChild(p);
+    requestAnimationFrame(()=>{ p.classList.add("in"); try{ p.scrollIntoView({behavior:"smooth", block:"nearest"}); }catch(e){} });
+    if(seqIdx < seqLines.length) seqTimer=setTimeout(seqStep, (line.length<=10?1500:2200));
+    else seqTimer=setTimeout(seqFinish, 2200);
+  }
+  function seqFinish(){
+    seqClearTimer();
+    if(seqFinished) return; seqFinished=true;
+    endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 700));
+    endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 1900));
   }
   function runEnding(){
     resetEnding();
@@ -160,18 +181,13 @@ const $ = id => document.getElementById(id);
     const seqArr = (e && e.seqKey && Array.isArray(CUR[e.seqKey])) ? CUR[e.seqKey] : null;
     const seqEl=$("endSeq");
     if(seqArr && seqEl){
-      // 긴 엔딩: 도착 → 한 줄씩 펼쳐짐(자막식) → 잔류 → 카드
-      let t=1400;
-      seqArr.forEach(line=>{
-        endingTimers.push(setTimeout(()=>{
-          seqEl.classList.remove("in");
-          setTimeout(()=>{ seqEl.textContent=line; seqEl.classList.add("in"); }, 360);
-        }, t));
-        t += (line.length <= 10 ? 1500 : 2200);
-      });
-      endingTimers.push(setTimeout(()=>{ if(seqEl) seqEl.classList.remove("in"); }, t));
-      endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, t+700));
-      endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, t+1900));
+      // 긴 엔딩: 한 줄씩 *쌓이며* 등장. 화면 탭하면 다음 줄 즉시(성격 급한 사람용).
+      seqLines=seqArr; seqIdx=0; seqFinished=false;
+      if(!seqTapBound){ seqTapBound=true; const dn=$("done"); if(dn) dn.addEventListener("click",ev=>{
+        if(ev.target.closest("#endCard")) return;        // 카드 버튼은 그대로
+        if(seqLines && !seqFinished) seqStep();           // 탭 = 다음 줄 즉시(마지막이면 마무리)
+      }); }
+      endingTimers.push(setTimeout(seqStep, 1400));        // 도착 후 시작
     } else {
       endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
       endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 2000));
