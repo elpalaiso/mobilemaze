@@ -72,7 +72,9 @@ const $ = id => document.getElementById(id);
   const ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
   /* 트릭 registry — 트릭별 init/cleanup 계약(향후 reset/fallback/hint도 이리로) */
   const TRICKS = {
-    press:    {},
+    press:    { bind:(lv)=>{ const t=lv.text||{};   // inc2 슬라이스1: 콘텐츠를 매니페스트 키로 바인딩
+      setT("l1-tag",CUR[t.tag]); setT("l1-riddle",CUR[t.riddle]); setT("l1-press",CUR[t.press]);
+      setT("l1-reveal",CUR[t.reveal]); setT("l1-hint",CUR[t.hint]); } },
     pinch:    {},
     tilt:     { init:tiltInit },
     blow:     { cleanup:stopMic },
@@ -92,7 +94,9 @@ const $ = id => document.getElementById(id);
     _lv.style.opacity="0"; requestAnimationFrame(()=>{ _lv.style.transition="opacity .35s ease"; _lv.style.opacity="1"; });
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
-    const nt=trickOf(ORDER[idx]); if(nt && nt.init) nt.init();            // 새 트릭 준비(registry)
+    const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[idx]);            // 콘텐츠 바인딩 + 트릭 준비(registry)
+    const nt=lvl ? TRICKS[lvl.trick] : null;
+    if(nt){ if(nt.bind) nt.bind(lvl); if(nt.init) nt.init(); }
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function advance(){ show(curIdx+1); }

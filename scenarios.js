@@ -7,7 +7,7 @@ const SCENARIOS = {
   tutorial: {
     id: "tutorial",
     levels: [
-      { sec:"lv1", trick:"press" },
+      { sec:"lv1", trick:"press", text:{ tag:"l1tag", riddle:"l1riddle", press:"l1press", reveal:"l1reveal", hint:"l1hint" } },
       { sec:"lv2", trick:"pinch" },
       { sec:"lv3", trick:"tilt" },
       { sec:"lv4", trick:"blow" },
