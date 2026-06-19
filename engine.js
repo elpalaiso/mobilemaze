@@ -135,6 +135,7 @@ const $ = id => document.getElementById(id);
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
   function showView(v){
     ["play","hub","gate"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
+    const mb=$("menuBtn"); if(mb) mb.classList.toggle("on", v==="hub");   // 허브 열림=강조(언어 토글처럼)
   }
   function buildHub(){
     const list=$("hubList"); if(!list) return;

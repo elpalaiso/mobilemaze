@@ -96,6 +96,7 @@
   .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
   .chip{ background:transparent; border:1px solid var(--line); color:var(--dim);
     border-radius:7px; padding:3px 10px; font-size:11px; }
+  .chip.on{ color:var(--accent); border-color:var(--accent); }
   #hubTitle{ text-align:center; color:var(--accent); font-size:15px; letter-spacing:.06em; margin:6px 0 18px; }
   #hubList{ display:flex; flex-direction:column; gap:10px; }
   .hubcard{ text-align:left; background:var(--bg2); border:1px solid var(--line); border-radius:14px;
