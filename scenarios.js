@@ -23,8 +23,8 @@ const SCENARIOS = {
     id: "snow_lake",
     titleKey: "sc_snow",
     levels: [
-      { sec:"lv1", trick:"press", ans:"snow_a1", text:{ tag:"snow1tag", riddle:"snow1riddle", press:"snow1press", reveal:"snow1reveal", hint:"snow1hint" } },
-      { sec:"lv7", trick:"row",   text:{ tag:"snow2tag", riddle:"snow2riddle", hint:"snow2hint" } },
+      { sec:"lvWarm", trick:"warm", text:{ tag:"snow1tag", riddle:"snow1riddle", hint:"snow1hint" } },
+      { sec:"lv7",    trick:"row",  text:{ tag:"snow2tag", riddle:"snow2riddle", hint:"snow2hint" } },
     ],
   },
 };

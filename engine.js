@@ -38,7 +38,7 @@ const $ = id => document.getElementById(id);
     setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar); setT("windGauge",CUR.l4windPrefix+"0%");
     setT("routeClearBtn",CUR.l5clear);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
-    setT("rowGauge",CUR.l7rowPrefix+"0%");
+    setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd); setT("hubTitle",CUR.hubTitle);
     setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
@@ -106,6 +106,8 @@ const $ = id => document.getElementById(id);
       setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
     farewell: { init:fwInit, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
+    warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
+      setT("warm-tag",CUR[t.tag]); setT("warm-riddle",CUR[t.riddle]); setT("warm-hint",CUR[t.hint]); } },
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
@@ -131,6 +133,7 @@ const $ = id => document.getElementById(id);
     if(d) d.innerHTML = Array.from({length:n},()=>"<i></i>").join("");
   }
   function startScenario(id){
+    stopMic(); flameStop(); warmStop();                 // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
@@ -167,6 +170,7 @@ const $ = id => document.getElementById(id);
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
+  let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false;
 
@@ -181,6 +185,7 @@ const $ = id => document.getElementById(id);
     routeReset();                                     // L5
     flameReset();                                     // L6
     rowReset();                                       // L7
+    warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
@@ -469,6 +474,49 @@ const $ = id => document.getElementById(id);
       $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
     }
     rowRender();
+  }
+
+  /* ===== 체온 나누기(warm): 떨고 있는 강아지를 길게 눌러 데움(짧은 탭=놓침) ===== */
+  function warmRender(){
+    $("warmFill").style.width = warmFill + "%";
+    const d=$("dog"); if(d){ d.classList.toggle("warm", warmHold || warmDone); d.style.opacity=(0.55+0.45*warmFill/100).toFixed(2); }
+    $("warmGauge").textContent = CUR.warmPrefix + Math.round(warmFill) + "%";
+  }
+  function warmLoop(){
+    if(!warmDone){
+      if(warmHold) warmFill=Math.min(100, warmFill+1.8);
+      else         warmFill=Math.max(0, warmFill-1.0);
+      warmRender();
+      if(warmFill>=100){ warmComplete(); return; }
+    }
+    warmRaf=requestAnimationFrame(warmLoop);
+  }
+  function warmStop(){ if(warmRaf){ cancelAnimationFrame(warmRaf); warmRaf=null; } }
+  function warmComplete(){
+    if(warmDone) return; warmDone=true; warmHold=false;
+    const d=$("dog"); if(d){ d.classList.add("warm"); d.style.opacity="1"; }
+    $("warmGauge").textContent = CUR.warmSet; haptic([0,80,40,120]);
+    warmStop();
+    setTimeout(advance, 1000);
+  }
+  function warmReset(){
+    warmFill=0; warmDone=false; warmHold=false;
+    const f=$("warmFill"); if(f) f.style.width="0%";
+    const d=$("dog"); if(d){ d.classList.remove("warm"); d.style.opacity=""; }
+    const g=$("warmGauge"); if(g) g.textContent=CUR.warmPrefix+"0%";
+  }
+  function warmInit(){
+    if(!warmBox){
+      warmBox=$("warmBox");
+      const down=e=>{ e.preventDefault(); warmHold=true; };
+      const up=()=>{ warmHold=false; };
+      warmBox.addEventListener("pointerdown",down);
+      warmBox.addEventListener("pointerup",up);
+      warmBox.addEventListener("pointerleave",up);
+      warmBox.addEventListener("pointercancel",up);
+    }
+    if(!warmDone) warmRender();
+    warmStop(); warmRaf=requestAnimationFrame(warmLoop);
   }
 
   /* ===== LEVEL 8 — 작별(졸업 연주): 배운 동작을 한 호흡씩, 데려다주기 코다 ===== */

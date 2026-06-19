@@ -66,6 +66,7 @@
       sc_snow:"첫눈 호수 — 노견을 건너다",
       snow1tag:"첫눈 호수 · 떨고 있는", snow1riddle:"❄️ 첫눈이 내린 호수. 늙은 개가 가만히 떨고 있다.\n곁에 가만히, 오래 손을 대어라.", snow1press:"가만히 — 손을 대본다", snow1reveal:"온기", snow1hint:"힌트: 화면을 *길게* 눌러 온기를 나눠라.", snow_a1:"온기",
       snow2tag:"첫눈 호수 · 잔물결", snow2riddle:"🚣 개가 배에 올랐다. 잔잔한 호수를 건너자.\n좌우로 번갈아, 천천히 노를 저어라.", snow2hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
+      warmPrefix:"온기: ", warmSet:"떨림이 멎었다… 배에 오른다 🐕",
       l1answer:"달빛", l2answer:"등대", l3answer:"수평선", l5answer:"북극성",
       answers:["달빛","등대","수평선","북극성"]
     },
@@ -135,6 +136,7 @@
       sc_snow:"Snow Lake — ferry the old dog",
       snow1tag:"SNOW LAKE · the shivering one", snow1riddle:"❄️ A lake under first snow. An old dog shivers, still.\nRest your hand beside it — long and quiet.", snow1press:"rest — your hand", snow1reveal:"warmth", snow1hint:"Hint: *press and hold* to share warmth.", snow_a1:"warmth",
       snow2tag:"SNOW LAKE · still ripples", snow2riddle:"🚣 The dog has boarded. Cross the still lake.\nPull the oars, left and right in turn.", snow2hint:"Hint: tap the *glowing* oar, alternating.",
+      warmPrefix:"warmth: ", warmSet:"The shivering stops… it climbs aboard 🐕",
       l1answer:"moonlight", l2answer:"lighthouse", l3answer:"horizon", l5answer:"polaris",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }

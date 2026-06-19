@@ -70,6 +70,12 @@
     to{transform:translateX(2px) rotate(5deg); opacity:.9;} }
   .shelter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
   .shelter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
+  /* 체온 나누기(warm) — 떨고 있는 강아지 */
+  .warmbox{ text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px; touch-action:none; }
+  .dog{ font-size:46px; line-height:1; display:inline-block; animation:shiver .11s infinite alternate; }
+  .dog.warm{ animation:none; transform:none; }
+  @keyframes shiver{ from{transform:translateX(-1.6px) rotate(-1deg);} to{transform:translateX(1.6px) rotate(1deg);} }
   /* L7 좌우 노 젓기 */
   .rowbox{display:flex; align-items:center; gap:10px; background:#0b0f1a;
     border:1px solid var(--line); border-radius:12px; padding:18px 12px;}
