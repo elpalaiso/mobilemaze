@@ -44,11 +44,13 @@ const $ = id => document.getElementById(id);
 
   /* ===== 정답 확인 (정답은 현재 언어 사전에서) ===== */
   const norm = s => (s||"").trim().toLowerCase();
+  /* 햅틱(Vibration API) — 미지원/데스크탑은 자동 무시. 작은도착=짧게, 막완료=패턴 */
+  function haptic(p){ try{ if(navigator.vibrate) navigator.vibrate(p); }catch(e){} }
   function check(i, inId, msgId){
     const v = norm($(inId).value);
     const m = $(msgId);
     if(v === norm(CUR.answers[i])){
-      m.className="msg ok"; m.textContent=CUR.ok;
+      m.className="msg ok"; m.textContent=CUR.ok; haptic(20);
       setTimeout(advance, 600);
     } else {
       m.className="msg bad"; m.textContent=CUR.bad;
@@ -113,7 +115,7 @@ const $ = id => document.getElementById(id);
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
   (function(){
     const box=$("pressBox"); let t=null;
-    const start=e=>{ t=setTimeout(()=>box.classList.add("lit"),600); };
+    const start=e=>{ t=setTimeout(()=>{ box.classList.add("lit"); haptic(20); },600); };
     const end=e=>{ clearTimeout(t); };
     box.addEventListener("touchstart",start,{passive:true});
     box.addEventListener("touchend",end);
@@ -123,7 +125,7 @@ const $ = id => document.getElementById(id);
   })();
 
   /* ===== LEVEL 3 — 기울이기(deviceorientation) + 슬라이더 폴백(몰입형 미러) ===== */
-  function tiltReveal(){ $("tiltBox").classList.add("show"); }
+  function tiltReveal(){ const b=$("tiltBox"); if(!b.classList.contains("show")) haptic(20); b.classList.add("show"); }
   function tiltOnTilt(e){
     tiltGotEvent = true;
     const g = Math.round(e.gamma||0);
@@ -174,7 +176,7 @@ const $ = id => document.getElementById(id);
     if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   }
   function sailComplete(msg){
-    if(sailDone) return; sailDone=true;
+    if(sailDone) return; sailDone=true; haptic([0,80,40,120]);
     $("windGauge").textContent = msg || CUR.l4set;
     stopMic();
     setTimeout(advance, 800);   // lv4 → lv5
@@ -255,7 +257,7 @@ const $ = id => document.getElementById(id);
     if(routeStars.length && routeStars.every(s=>s.hit)) routeComplete();
   }
   function routeComplete(){
-    if(routeDone) return; routeDone=true;
+    if(routeDone) return; routeDone=true; haptic([0,80,40,120]);
     $("l5-reveal").classList.add("show");
     routeRender();
   }
@@ -314,7 +316,7 @@ const $ = id => document.getElementById(id);
   }
   function flameStop(){ if(flameRaf){ cancelAnimationFrame(flameRaf); flameRaf=null; } }
   function flameComplete(){
-    if(flameDone) return; flameDone=true;
+    if(flameDone) return; flameDone=true; haptic([0,80,40,120]);
     const f=$("flame"); f.classList.add("steady"); f.style.opacity="1";
     $("flameGauge").textContent = CUR.l6set;
     flameStop();
@@ -353,14 +355,14 @@ const $ = id => document.getElementById(id);
   }
   function rowStroke(side){
     if(rowDone || side !== rowNext) return;     // 좌우 번갈아만 인정(틀려도 벌점 없음)
-    rowCount++; rowNext = side==='left' ? 'right' : 'left';
+    rowCount++; rowNext = side==='left' ? 'right' : 'left'; haptic(8);
     const o = side==='left' ? $("oarL") : $("oarR");
     o.classList.add("stroke"); setTimeout(()=>o.classList.remove("stroke"), 120);
     rowRender();
     if(rowCount >= rowNeed) rowComplete();
   }
   function rowComplete(){
-    if(rowDone) return; rowDone=true;
+    if(rowDone) return; rowDone=true; haptic([0,80,40,120]);
     $("oarL").classList.remove("next"); $("oarR").classList.remove("next");
     $("rowGauge").textContent = CUR.l7set;
     setTimeout(advance, 1000);                  // lv7 → done
@@ -393,9 +395,9 @@ const $ = id => document.getElementById(id);
     if(fwDone) return;
     fwStep++;
     if(fwStep < CUR.l8lines.length){
-      fwShow();
+      haptic(25); fwShow();
     } else {
-      fwDone=true;
+      fwDone=true; haptic([0,110,60,160]);
       setT("l8-line", CUR.l8end);
       const sc=$("fwScene"); if(sc) sc.textContent = "🌅";
       const b=$("fwBtn"); if(b) b.style.display="none";
