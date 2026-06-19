@@ -31,6 +31,7 @@ const $ = id => document.getElementById(id);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("l7-tag",CUR.l7tag); setT("l7-riddle",CUR.l7riddle); setT("l7-hint",CUR.l7hint);
     setT("rowGauge",CUR.l7rowPrefix+"0%");
+    setT("l8-tag",CUR.l8tag); setT("l8-hint",CUR.l8hint); setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -56,7 +57,7 @@ const $ = id => document.getElementById(id);
 
   /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
   const SAVE_KEY="mobilemaze.progress";
-  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","lv7","done"];
+  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","lv7","lv8","done"];
   let curIdx = 0;
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
@@ -71,6 +72,7 @@ const $ = id => document.getElementById(id);
     if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
     if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
     if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
+    if(ORDER[idx]==="lv8") fwInit();          // 작별 시퀀스 준비
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function advance(){ show(curIdx+1); }
@@ -82,6 +84,7 @@ const $ = id => document.getElementById(id);
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
+  let fwStep=0, fwDone=false, fwBound=false;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -94,6 +97,7 @@ const $ = id => document.getElementById(id);
     routeReset();                                     // L5
     flameReset();                                     // L6
     rowReset();                                       // L7
+    fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
   }
@@ -374,4 +378,44 @@ const $ = id => document.getElementById(id);
       $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
     }
     rowRender();
+  }
+
+  /* ===== LEVEL 8 — 작별(졸업 연주): 배운 동작을 한 호흡씩, 데려다주기 코다 ===== */
+  function fwShow(){
+    if(fwDone) return;
+    if(fwStep < CUR.l8lines.length){
+      setT("l8-line", CUR.l8lines[fwStep]);
+      const scenes=["🕯️","🏮","⛵","🌊"];
+      const sc=$("fwScene"); if(sc) sc.textContent = scenes[fwStep] || "🕯️";
+    }
+  }
+  function fwAdvanceBeat(){
+    if(fwDone) return;
+    fwStep++;
+    if(fwStep < CUR.l8lines.length){
+      fwShow();
+    } else {
+      fwDone=true;
+      setT("l8-line", CUR.l8end);
+      const sc=$("fwScene"); if(sc) sc.textContent = "🌅";
+      const b=$("fwBtn"); if(b) b.style.display="none";
+      setTimeout(advance, 2400);              // lv8 → done(코다)
+    }
+  }
+  function fwReset(){
+    fwStep=0; fwDone=false;
+    const b=$("fwBtn"); if(b) b.style.display="";
+    fwShow();
+  }
+  function fwInit(){
+    if(!fwBound){
+      fwBound=true;
+      const btn=$("fwBtn"); let t=null;
+      const start=()=>{ clearTimeout(t); t=setTimeout(fwAdvanceBeat, 700); };
+      const end=()=>{ clearTimeout(t); };
+      btn.addEventListener("pointerdown",e=>{ e.preventDefault(); start(); });
+      btn.addEventListener("pointerup",end);
+      btn.addEventListener("pointerleave",end);
+    }
+    fwShow();
   }

@@ -52,9 +52,14 @@
       l7hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
       l7rowPrefix:"전진: ",
       l7set:"폭풍을 넘었다… 멀리, 별이 보인다 ✦",
+      l8tag:"작별 · 졸업 연주",
+      l8hint:"힌트: 버튼을 *지그시 길게* 눌러 한 동작씩.",
+      l8btn:"🤲 지그시 — 길게 누르기",
+      l8lines:["마지막 불빛을, 두 손으로 가만히 감싼다.","건너편으로 — 등불을 건넨다.","빈 배의 뱃머리를, 돌아오는 쪽으로 돌린다.","멀어지며, 마지막으로 숨을 보탠다."],
+      l8end:"잘 가. 이쪽은 내가 지킬게.",
       doneTitle:"항해 🌅",
-      doneBody:"달빛과 별, 바람과 등불, 그리고 폭풍을 넘어.<br>밤바다 한가운데, 잠시 숨을 고른다.",
-      doneEnd:"— 다음 항해(작별)는 곧 —",
+      doneBody:"닿았다. 등불은 건너편에서 깜빡이고,<br>빈 배는, 왔던 쪽으로 — 혼자 돌아온다.",
+      doneEnd:"— 첫 항해 끝 · fin —",
       answers:["달빛","등대","수평선","북극성"]
     },
     en: {
@@ -109,9 +114,14 @@
       l7hint:"Hint: tap the *glowing* oar, alternating left and right.",
       l7rowPrefix:"progress: ",
       l7set:"Through the storm… far off, stars appear ✦",
+      l8tag:"FAREWELL · the recital",
+      l8hint:"Hint: *press and hold* the button — one act at a time.",
+      l8btn:"🤲 hold, gently",
+      l8lines:["Cup the last light, gently, in both hands.","Across the water — hand the lantern over.","Turn the empty boat's bow back toward home.","As you drift away, add one last breath to the sail."],
+      l8end:"Go well. I'll keep this side.",
       doneTitle:"Voyage 🌅",
-      doneBody:"Moonlight and stars, wind and lantern, and through the storm.<br>Mid–night-sea, you catch your breath.",
-      doneEnd:"— the next voyage (farewell) comes soon —",
+      doneBody:"It reached. The lantern blinks on the far shore,<br>and the empty boat turns home — alone.",
+      doneEnd:"— end of the first voyage · fin —",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }
   };
