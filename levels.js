@@ -60,6 +60,7 @@
       doneTitle:"항해 🌅",
       doneBody:"닿았다. 등불은 건너편에서 깜빡이고,<br>빈 배는, 왔던 쪽으로 — 혼자 돌아온다.",
       doneEnd:"— 첫 항해 끝 · fin —",
+      l1answer:"달빛", l2answer:"등대", l3answer:"수평선", l5answer:"북극성",
       answers:["달빛","등대","수평선","북극성"]
     },
     en: {
@@ -122,6 +123,7 @@
       doneTitle:"Voyage 🌅",
       doneBody:"It reached. The lantern blinks on the far shore,<br>and the empty boat turns home — alone.",
       doneEnd:"— end of the first voyage · fin —",
+      l1answer:"moonlight", l2answer:"lighthouse", l3answer:"horizon", l5answer:"polaris",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }
   };

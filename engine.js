@@ -50,10 +50,12 @@ const $ = id => document.getElementById(id);
     g.style.transition="none"; g.style.opacity = big ? "0.5" : "0.26";
     requestAnimationFrame(()=>{ g.style.transition="opacity "+(big?720:400)+"ms ease-out"; g.style.opacity="0"; });
   }
-  function check(i, inId, msgId){
+  function check(inId, msgId){
+    const lvl = RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
+    const target = lvl && lvl.ans ? CUR[lvl.ans] : "";   // 정답 = 현재 시나리오 레벨의 매니페스트 키
     const v = norm($(inId).value);
     const m = $(msgId);
-    if(v === norm(CUR.answers[i])){
+    if(target && v === norm(target)){
       m.className="msg ok"; m.textContent=CUR.ok; haptic(20);
       setTimeout(advance, 600);
     } else {
