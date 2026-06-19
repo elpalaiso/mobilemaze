@@ -17,27 +17,22 @@ const $ = id => document.getElementById(id);
 
     setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
     const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
-    setT("l1-tag",CUR.l1tag); setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
-    setT("l1-reveal",CUR.l1reveal); setT("l1-hint",CUR.l1hint);
-    setT("l2-tag",CUR.l2tag); setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
-    setT("l2-tiny",CUR.l2tiny); setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
-    setT("l3-tag",CUR.l3tag); setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret);
-    setT("l3-hint",CUR.l3hint); setT("l3-fallback-hint",CUR.l3fbhint); setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
-    setT("l4-tag",CUR.l4tag); setT("l4-riddle",CUR.l4riddle); setT("l4-hint",CUR.l4hint);
+    // 트릭 chrome (레벨 콘텐츠는 매니페스트 → registry bind 가 담당)
+    setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
     setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar); setT("windGauge",CUR.l4windPrefix+"0%");
-    setT("l5-tag",CUR.l5tag); setT("l5-riddle",CUR.l5riddle); setT("l5-hint",CUR.l5hint);
-    setT("l5-reveal",CUR.l5reveal); setT("routeClearBtn",CUR.l5clear);
-    setT("l6-tag",CUR.l6tag); setT("l6-riddle",CUR.l6riddle); setT("l6-hint",CUR.l6hint);
+    setT("routeClearBtn",CUR.l5clear);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
-    setT("l7-tag",CUR.l7tag); setT("l7-riddle",CUR.l7riddle); setT("l7-hint",CUR.l7hint);
     setT("rowGauge",CUR.l7rowPrefix+"0%");
-    setT("l8-tag",CUR.l8tag); setT("l8-hint",CUR.l8hint); setT("fwBtn",CUR.l8btn); fwShow();
+    setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
     document.querySelectorAll(".langbar button").forEach(b=>
       b.classList.toggle("on", b.dataset.lang===lang));
+    // 현재 활성 레벨 콘텐츠 재바인딩(언어 토글 반영)
+    const _l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
+    if(_l && TRICKS[_l.trick] && TRICKS[_l.trick].bind) TRICKS[_l.trick].bind(_l);
   }
   document.querySelectorAll(".langbar button").forEach(b=>
     b.addEventListener("click",()=>applyLang(b.dataset.lang)));
