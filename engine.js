@@ -107,7 +107,7 @@ const $ = id => document.getElementById(id);
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, bind:(lv)=>{ const t=lv.text||{};
       setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
-    farewell: { init:fwInit, bind:(lv)=>{ const t=lv.text||{};
+    farewell: { init:fwInit, cleanup:fwStopLoop, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
       setT("warm-tag",CUR[t.tag]); setT("warm-riddle",CUR[t.riddle]); setT("warm-hint",CUR[t.hint]); } },
@@ -149,7 +149,7 @@ const $ = id => document.getElementById(id);
     if(d) d.innerHTML = Array.from({length:n},()=>"<i></i>").join("");
   }
   function startScenario(id){
-    stopMic(); flameStop(); warmStop();                 // 이전 시나리오 루프 정리(방어)
+    stopMic(); flameStop(); warmStop(); fwStopLoop();    // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
@@ -188,7 +188,7 @@ const $ = id => document.getElementById(id);
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
-  let fwStep=0, fwDone=false, fwBound=false;
+  let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -559,33 +559,44 @@ const $ = id => document.getElementById(id);
       }
     }
   }
-  function fwAdvanceBeat(){
-    if(fwDone) return;
-    fwStep++;
-    if(fwStep < CUR.l8lines.length){
-      haptic(25); fwShow();
-    } else {
-      fwDone=true; haptic([0,110,60,160]);
-      setT("l8-line", CUR.l8end);
-      const sc=$("fwScene"); if(sc) sc.textContent = "🌅";
-      const b=$("fwBtn"); if(b) b.style.display="none";
-      setTimeout(advance, 2400);              // lv8 → done(코다)
+  /* 졸업 연주 = 끊어 누르기 ×4 ✕ → *하나의 연속된 홀드*. 누른 채로 네 동작이 흐르고, 끝에서 손을 뗀다.
+     떼면 진행만 멈춤(되감김 없음 = 배웅에 관대). */
+  function fwLoop(){
+    if(!fwDone){
+      if(fwHold) fwProgress = Math.min(100, fwProgress + 0.30);
+      const seg = 100 / CUR.l8lines.length;
+      const step = Math.min(CUR.l8lines.length-1, Math.floor(fwProgress / seg));
+      if(step !== fwStep){ fwStep = step; haptic(25); fwShow(); }
+      if(fwProgress >= 100){ fwComplete(); return; }
     }
+    fwRaf = requestAnimationFrame(fwLoop);
+  }
+  function fwStopLoop(){ if(fwRaf){ cancelAnimationFrame(fwRaf); fwRaf=null; } }
+  function fwComplete(){
+    if(fwDone) return; fwDone=true; fwHold=false; haptic([0,110,60,160]);
+    setT("l8-line", CUR.l8end);
+    const sc=$("fwScene"); if(sc) sc.textContent = "🌅";
+    const b=$("fwBtn"); if(b) b.style.display="none";
+    fwStopLoop();
+    setTimeout(advance, 2400);              // lv8 → done(코다)
   }
   function fwReset(){
-    fwStep=0; fwDone=false;
+    fwStep=0; fwDone=false; fwProgress=0; fwHold=false;
     const b=$("fwBtn"); if(b) b.style.display="";
-    fwShow();
+    fwShow(); fwStopLoop();
   }
   function fwInit(){
     if(!fwBound){
       fwBound=true;
-      const btn=$("fwBtn"); let t=null;
-      const start=()=>{ clearTimeout(t); t=setTimeout(fwAdvanceBeat, 700); };
-      const end=()=>{ clearTimeout(t); };
-      btn.addEventListener("pointerdown",e=>{ e.preventDefault(); start(); });
-      btn.addEventListener("pointerup",end);
-      btn.addEventListener("pointerleave",end);
+      const btn=$("fwBtn");
+      const down=e=>{ e.preventDefault(); fwHold=true; };
+      const up=()=>{ fwHold=false; };
+      btn.addEventListener("pointerdown",down);
+      btn.addEventListener("pointerup",up);
+      btn.addEventListener("pointerleave",up);
+      btn.addEventListener("pointercancel",up);
     }
+    fwStep=0; fwProgress=0; fwHold=false;
     fwShow();
+    fwStopLoop(); fwRaf=requestAnimationFrame(fwLoop);
   }
