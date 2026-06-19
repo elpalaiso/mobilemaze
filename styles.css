@@ -89,3 +89,6 @@
   .dots i.on{background:var(--accent);}
   .reset{display:block; margin:0 auto 14px; background:transparent; color:var(--dim);
     border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:11px;}
+  /* 빌드 표시(개발용) — 하단 중앙 아주 흐리게, 클릭 통과 */
+  #build{ position:fixed; left:0; right:0; bottom:2px; text-align:center; font-size:9px;
+    color:#39435c; letter-spacing:.04em; pointer-events:none; z-index:40; }
