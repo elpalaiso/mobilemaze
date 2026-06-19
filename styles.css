@@ -1,0 +1,91 @@
+  :root{
+    --bg:#0e1320; --bg2:#141b2e; --ink:#e7ecf5; --dim:#8a96ad;
+    --accent:#e3a542; --line:#283248; --ok:#6f7a37; --bad:#bf5830;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;}
+  body{min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+    padding:24px 18px 56px; line-height:1.6;}
+  .wrap{width:100%; max-width:440px;}
+  .langbar{display:flex; justify-content:flex-end; gap:6px; margin-bottom:6px;}
+  .langbar button{background:transparent; border:1px solid var(--line); color:var(--dim);
+    border-radius:7px; padding:3px 9px; font-size:11px;}
+  .langbar button.on{color:var(--accent); border-color:var(--accent);}
+  header{text-align:center; margin:8px 0 22px;}
+  header h1{font-size:20px; letter-spacing:.06em; margin:0; color:var(--accent);}
+  header p{font-size:12px; color:var(--dim); margin:6px 0 0;}
+  .level{background:var(--bg2); border:1px solid var(--line); border-radius:16px;
+    padding:22px 18px; margin:0 0 16px; display:none;}
+  .level.active{display:block;}
+  .tag{font-size:11px; color:var(--dim); letter-spacing:.12em;}
+  .riddle{font-size:16px; margin:10px 0 18px; white-space:pre-line;}
+  .hint{font-size:12px; color:var(--dim); margin-top:4px;}
+  /* 입력 */
+  .ans{display:flex; gap:8px; margin-top:16px;}
+  .ans input{flex:1; min-width:0; background:#0b0f1a; border:1px solid var(--line);
+    color:var(--ink); border-radius:10px; padding:12px 12px; font-size:16px;}
+  .ans button{background:var(--accent); color:#1a1206; border:0; border-radius:10px;
+    padding:0 16px; font-size:15px; font-weight:700;}
+  .msg{font-size:13px; min-height:18px; margin-top:10px;}
+  .msg.ok{color:var(--ok);} .msg.bad{color:var(--bad);}
+  /* L1 길게 누르기 박스 */
+  .press{user-select:none; -webkit-user-select:none; text-align:center;
+    background:#0b0f1a; border:1px dashed var(--line); border-radius:12px;
+    padding:26px 14px; color:var(--dim); font-size:14px; touch-action:none;}
+  .press .reveal{display:none; color:var(--accent); font-size:18px; letter-spacing:.05em;}
+  .press.lit .label{display:none;} .press.lit .reveal{display:inline;}
+  /* L2 깨알 단서 */
+  .scroll{background:#0b0f1a; border:1px solid var(--line); border-radius:12px;
+    padding:16px; font-size:13px; color:var(--dim);}
+  .tiny{font-size:3px; line-height:1; color:#c5ab8d;} /* 확대해야 읽힘 */
+  /* L3 기울이기 */
+  .tilt{text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px; transition:opacity .2s;}
+  .tilt .secret{opacity:0; transition:opacity .25s; color:var(--accent);
+    font-size:18px; letter-spacing:.05em;}
+  .tilt.show .secret{opacity:1;}
+  .gauge{font-size:11px; color:var(--dim); margin-top:10px;}
+  .sensorBtn{margin-top:14px; background:transparent; color:var(--accent);
+    border:1px solid var(--accent); border-radius:10px; padding:10px 14px; font-size:13px;}
+  /* L4 불기(돛) */
+  .sailbox{text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px;}
+  .sail{font-size:46px; line-height:1; filter:grayscale(1) opacity(.4); transition:.15s;}
+  .windmeter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
+  .windmeter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
+  /* L5 항로 그리기(canvas) */
+  #routeCanvas{display:block; width:100%; height:200px; background:#0b0f1a;
+    border:1px solid var(--line); border-radius:12px; touch-action:none;}
+  #l5-reveal{opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
+    font-size:18px; letter-spacing:.05em; margin-top:12px;}
+  #l5-reveal.show{opacity:1;}
+  /* L6 등불 감싸기 */
+  .flamebox{text-align:center; background:#0b0f1a; border:1px solid var(--line);
+    border-radius:12px; padding:24px 14px; touch-action:none;}
+  .flame{font-size:44px; line-height:1; display:inline-block;
+    animation:flicker .25s infinite alternate;}
+  .flame.steady{animation:none; transform:none;}
+  @keyframes flicker{ from{transform:translateX(-2px) rotate(-5deg); opacity:.55;}
+    to{transform:translateX(2px) rotate(5deg); opacity:.9;} }
+  .shelter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
+  .shelter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
+  /* L7 좌우 노 젓기 */
+  .rowbox{display:flex; align-items:center; gap:10px; background:#0b0f1a;
+    border:1px solid var(--line); border-radius:12px; padding:18px 12px;}
+  .oar{flex:0 0 66px; height:88px; background:#141b2e; border:1px solid var(--line);
+    border-radius:12px; color:var(--dim); font-size:26px; touch-action:none; transition:.1s;}
+  .oar.next{border-color:var(--accent); color:var(--accent); animation:oarpulse 1s infinite;}
+  .oar.stroke{transform:scale(.92); background:var(--accent); color:#1a1206;}
+  @keyframes oarpulse{0%,100%{opacity:1;} 50%{opacity:.5;}}
+  .rowmid{flex:1; text-align:center;}
+  .boat{font-size:34px; transition:transform .15s;}
+  .rowmeter{height:8px; background:var(--line); border-radius:5px; margin-top:12px; overflow:hidden;}
+  .rowmeter .fill{height:100%; width:0%; background:var(--accent); transition:width .15s;}
+  .clear{text-align:center; padding:30px 12px;}
+  .clear h2{color:var(--accent); margin:0 0 8px;}
+  .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
+  .dots i{width:8px; height:8px; border-radius:50%; background:var(--line);}
+  .dots i.on{background:var(--accent);}
+  .reset{display:block; margin:0 auto 14px; background:transparent; color:var(--dim);
+    border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:11px;}

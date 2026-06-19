@@ -1,0 +1,353 @@
+const $ = id => document.getElementById(id);
+  const setT = (id,t) => { const e=$(id); if(e) e.textContent=t; };
+  let CUR = I18N.ko;
+  const LANG_KEY = "mobilemaze.lang";
+
+  function detectLang(){
+    const saved = localStorage.getItem(LANG_KEY);
+    if(saved && I18N[saved]) return saved;
+    return (navigator.language||"ko").toLowerCase().startsWith("ko") ? "ko" : "en";
+  }
+
+  function applyLang(lang){
+    if(!I18N[lang]) lang="ko";
+    CUR = I18N[lang];
+    document.documentElement.lang = lang;
+    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+
+    setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
+    const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
+    setT("l1-tag",CUR.l1tag); setT("l1-riddle",CUR.l1riddle); setT("l1-press",CUR.l1press);
+    setT("l1-reveal",CUR.l1reveal); setT("l1-hint",CUR.l1hint);
+    setT("l2-tag",CUR.l2tag); setT("l2-riddle",CUR.l2riddle); setT("l2-before",CUR.l2before);
+    setT("l2-tiny",CUR.l2tiny); setT("l2-after",CUR.l2after); setT("l2-hint",CUR.l2hint);
+    setT("l3-tag",CUR.l3tag); setT("l3-riddle",CUR.l3riddle); setT("l3-secret",CUR.l3secret);
+    setT("l3-hint",CUR.l3hint); setT("sensorBtn",CUR.sensor); setT("gauge",CUR.gaugeInit);
+    setT("l4-tag",CUR.l4tag); setT("l4-riddle",CUR.l4riddle); setT("l4-hint",CUR.l4hint);
+    setT("windBtn",CUR.l4windBtn); setT("oarBtn",CUR.l4oar); setT("windGauge",CUR.l4windPrefix+"0%");
+    setT("l5-tag",CUR.l5tag); setT("l5-riddle",CUR.l5riddle); setT("l5-hint",CUR.l5hint);
+    setT("l5-reveal",CUR.l5reveal); setT("routeClearBtn",CUR.l5clear);
+    setT("l6-tag",CUR.l6tag); setT("l6-riddle",CUR.l6riddle); setT("l6-hint",CUR.l6hint);
+    setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
+    setT("l7-tag",CUR.l7tag); setT("l7-riddle",CUR.l7riddle); setT("l7-hint",CUR.l7hint);
+    setT("rowGauge",CUR.l7rowPrefix+"0%");
+    setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
+    $("done-body").innerHTML = CUR.doneBody;
+    document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
+    ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.placeholder=CUR.placeholder; });
+    document.querySelectorAll(".langbar button").forEach(b=>
+      b.classList.toggle("on", b.dataset.lang===lang));
+  }
+  document.querySelectorAll(".langbar button").forEach(b=>
+    b.addEventListener("click",()=>applyLang(b.dataset.lang)));
+
+  /* ===== 정답 확인 (정답은 현재 언어 사전에서) ===== */
+  const norm = s => (s||"").trim().toLowerCase();
+  function check(i, inId, msgId){
+    const v = norm($(inId).value);
+    const m = $(msgId);
+    if(v === norm(CUR.answers[i])){
+      m.className="msg ok"; m.textContent=CUR.ok;
+      setTimeout(advance, 600);
+    } else {
+      m.className="msg bad"; m.textContent=CUR.bad;
+    }
+  }
+
+  /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
+  const SAVE_KEY="mobilemaze.progress";
+  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","lv7","done"];
+  let curIdx = 0;
+  function show(idx){
+    idx=Math.max(0,Math.min(idx,ORDER.length-1));
+    curIdx = idx;
+    if(ORDER[idx]!=="lv4") stopMic();        // 돛 레벨을 떠나면 마이크 정리
+    if(ORDER[idx]!=="lv6") flameStop();      // 등불 레벨을 떠나면 루프 정리
+    document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
+    $(ORDER[idx]).classList.add("active");
+    document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
+    window.scrollTo(0,0);
+    if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
+    if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
+    if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
+    try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
+  }
+  function advance(){ show(curIdx+1); }
+  function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
+
+  /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
+  let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
+  let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
+  let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
+  let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
+
+  /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
+  function resetLevels(){
+    $("pressBox").classList.remove("lit");            // L1
+    $("tiltBox").classList.remove("show");            // L3
+    $("gauge").textContent = CUR.gaugeInit;
+    sailDone=false; setSail(0,0);                     // L4
+    $("windBtn").style.display=""; $("oarBtn").style.display="none";
+    routeReset();                                     // L5
+    flameReset();                                     // L6
+    rowReset();                                       // L7
+    ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
+    ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
+  }
+
+  /* ===== 초기화 ===== */
+  applyLang(detectLang());
+  show(loadProgress());
+  $("resetBtn").addEventListener("click",()=>{
+    stopMic(); resetLevels();
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} show(0);
+  });
+
+  /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
+  (function(){
+    const box=$("pressBox"); let t=null;
+    const start=e=>{ t=setTimeout(()=>box.classList.add("lit"),600); };
+    const end=e=>{ clearTimeout(t); };
+    box.addEventListener("touchstart",start,{passive:true});
+    box.addEventListener("touchend",end);
+    box.addEventListener("mousedown",start);
+    box.addEventListener("mouseup",end);
+    box.addEventListener("mouseleave",end);
+  })();
+
+  /* ===== LEVEL 3 — 기울이기(deviceorientation) ===== */
+  (function(){
+    const box=$("tiltBox"), gauge=$("gauge"), btn=$("sensorBtn");
+    function onTilt(e){
+      const g = Math.round(e.gamma||0);
+      gauge.textContent = CUR.gaugePrefix + g + "°";
+      box.classList.toggle("show", Math.abs(g) > 40);
+    }
+    function enable(){
+      if(typeof DeviceOrientationEvent!=="undefined" &&
+         typeof DeviceOrientationEvent.requestPermission==="function"){
+        DeviceOrientationEvent.requestPermission().then(p=>{
+          if(p==="granted"){ window.addEventListener("deviceorientation",onTilt); btn.style.display="none"; }
+        }).catch(()=>{});
+      } else {
+        window.addEventListener("deviceorientation",onTilt); btn.style.display="none";
+      }
+    }
+    btn.addEventListener("click",enable);
+    if(typeof DeviceOrientationEvent!=="undefined" &&
+       typeof DeviceOrientationEvent.requestPermission!=="function"){
+      window.addEventListener("deviceorientation",onTilt);
+    }
+  })();
+
+  /* ===== LEVEL 4 — 불기(돛): 마이크 소리로 돛 채우기 ===== */
+  function setSail(fill){
+    $("windFill").style.width = fill + "%";
+    const s=$("sail");
+    s.style.filter = "grayscale(" + (1-fill/100).toFixed(2) + ") opacity(" + (0.4+0.6*fill/100).toFixed(2) + ")";
+    s.style.transform = "scale(" + (1+0.18*fill/100).toFixed(2) + ")";
+    $("windGauge").textContent = CUR.l4windPrefix + Math.round(fill) + "%";
+  }
+  function stopMic(){
+    if(micRaf){ cancelAnimationFrame(micRaf); micRaf=null; }
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
+  }
+  function sailComplete(){
+    if(sailDone) return; sailDone=true;
+    $("windGauge").textContent = CUR.l4set;
+    stopMic();
+    setTimeout(advance, 800);   // lv4 → lv5
+  }
+  async function startWind(){
+    try{
+      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==="suspended") await audioCtx.resume();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      $("windBtn").style.display="none";
+      let fill = 0;
+      (function loop(){
+        analyser.getByteFrequencyData(data);
+        let sum=0, n=24;                       // 저주파 에너지 ≈ 입김
+        for(let i=2;i<2+n;i++) sum+=data[i];
+        const lvl = sum/n;                      // 0..255
+        if(lvl > 55) fill = Math.min(100, fill + 3.2);
+        else        fill = Math.max(0, fill - 1.4);
+        setSail(fill);
+        if(fill>=100){ sailComplete(); return; }
+        micRaf = requestAnimationFrame(loop);
+      })();
+    }catch(e){
+      $("oarBtn").style.display="block";        // 마이크 거부/불가 → 노 젓기 폴백
+    }
+  }
+  $("windBtn").addEventListener("click",startWind);
+  $("oarBtn").addEventListener("click",advance);
+
+  /* ===== LEVEL 5 — 손가락 긋기(항로 그리기): 별을 모두 이으면 길잡이 별이 드러남 ===== */
+  function routeInit(){
+    if(!routeCanvas){
+      routeCanvas = $("routeCanvas");
+      routeCtx = routeCanvas.getContext("2d");
+      routeStars = [
+        {x:0.14,y:0.68,hit:false},{x:0.33,y:0.30,hit:false},
+        {x:0.52,y:0.64,hit:false},{x:0.71,y:0.26,hit:false},{x:0.88,y:0.52,hit:false}
+      ];
+      const down=e=>{ routeDrawing=true; routeAdd(e); };
+      const move=e=>{ if(routeDrawing){ e.preventDefault(); routeAdd(e); } };
+      const up=()=>{ routeDrawing=false; };
+      routeCanvas.addEventListener("pointerdown",down);
+      routeCanvas.addEventListener("pointermove",move);
+      routeCanvas.addEventListener("pointerup",up);
+      routeCanvas.addEventListener("pointerleave",up);
+      $("routeClearBtn").addEventListener("click",()=>{ routeReset(); });
+    }
+    routeSize(); routeRender();
+  }
+  function routeSize(){
+    if(!routeCanvas) return;
+    routeCanvas.width = routeCanvas.clientWidth || 320;
+    routeCanvas.height = 200;
+  }
+  function routeAdd(e){
+    if(routeDone || !routeCanvas) return;
+    const r=routeCanvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    routeStroke.push({x,y});
+    routeStars.forEach(s=>{
+      const sx=s.x*routeCanvas.width, sy=s.y*routeCanvas.height;
+      if(!s.hit && Math.hypot(x-sx,y-sy) < 24) s.hit=true;
+    });
+    routeRender();
+    if(routeStars.length && routeStars.every(s=>s.hit)) routeComplete();
+  }
+  function routeComplete(){
+    if(routeDone) return; routeDone=true;
+    $("l5-reveal").classList.add("show");
+    routeRender();
+  }
+  function routeReset(){
+    routeStroke=[]; routeDone=false;
+    routeStars.forEach(s=>s.hit=false);
+    const rv=$("l5-reveal"); if(rv) rv.classList.remove("show");
+    routeRender();
+  }
+  function routeRender(){
+    if(!routeCtx) return;
+    const w=routeCanvas.width, h=routeCanvas.height;
+    routeCtx.clearRect(0,0,w,h);
+    if(routeStroke.length>1){
+      routeCtx.strokeStyle="rgba(227,165,66,.55)"; routeCtx.lineWidth=3;
+      routeCtx.lineCap="round"; routeCtx.lineJoin="round";
+      routeCtx.beginPath();
+      routeStroke.forEach((p,i)=> i ? routeCtx.lineTo(p.x,p.y) : routeCtx.moveTo(p.x,p.y));
+      routeCtx.stroke();
+    }
+    routeStars.forEach(s=>{
+      const sx=s.x*w, sy=s.y*h;
+      if(s.hit){
+        routeCtx.beginPath(); routeCtx.arc(sx,sy,11,0,7);
+        routeCtx.strokeStyle="rgba(227,165,66,.4)"; routeCtx.lineWidth=2; routeCtx.stroke();
+      }
+      routeCtx.beginPath(); routeCtx.arc(sx,sy, s.hit?6:4, 0, 7);
+      routeCtx.fillStyle = s.hit ? "#e3a542" : "#3a4663"; routeCtx.fill();
+    });
+  }
+
+  /* ===== LEVEL 6 — 두 손가락 감싸기(등불 보살핌): 불씨를 양손으로 감싸 지킨다 ===== */
+  function flameRender(){
+    $("flameFill").style.width = flameShelter + "%";
+    const f=$("flame");
+    f.classList.toggle("steady", (flameSheltering||flameBtnHold) && !flameDone);
+    f.style.opacity = (0.5 + 0.5*flameShelter/100).toFixed(2);
+    $("flameGauge").textContent = CUR.l6shelterPrefix + Math.round(flameShelter) + "%";
+  }
+  function flameEval(e){
+    if(flameDone){ flameSheltering=false; return; }
+    const t=e.touches;
+    if(t && t.length>=2){
+      const d=Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+      flameSheltering = d < 180;            // 두 손가락이 등불을 감쌀 만큼 가까움
+    } else flameSheltering=false;
+  }
+  function flameLoop(){
+    if(!flameDone){
+      if(flameSheltering || flameBtnHold) flameShelter=Math.min(100, flameShelter+2.0);
+      else                                flameShelter=Math.max(0, flameShelter-1.1);
+      flameRender();
+      if(flameShelter>=100){ flameComplete(); return; }
+    }
+    flameRaf=requestAnimationFrame(flameLoop);
+  }
+  function flameStop(){ if(flameRaf){ cancelAnimationFrame(flameRaf); flameRaf=null; } }
+  function flameComplete(){
+    if(flameDone) return; flameDone=true;
+    const f=$("flame"); f.classList.add("steady"); f.style.opacity="1";
+    $("flameGauge").textContent = CUR.l6set;
+    flameStop();
+    setTimeout(advance, 1000);              // lv6 → done
+  }
+  function flameReset(){
+    flameShelter=0; flameDone=false; flameSheltering=false; flameBtnHold=false;
+    const ff=$("flameFill"); if(ff) ff.style.width="0%";
+    const fl=$("flame"); if(fl){ fl.classList.remove("steady"); fl.style.opacity=""; }
+    const fg=$("flameGauge"); if(fg) fg.textContent=CUR.l6shelterPrefix+"0%";
+  }
+  function flameInit(){
+    if(!flameBox){
+      flameBox=$("flameBox");
+      const ev=e=>{ e.preventDefault(); flameEval(e); };
+      flameBox.addEventListener("touchstart",ev,{passive:false});
+      flameBox.addEventListener("touchmove",ev,{passive:false});
+      flameBox.addEventListener("touchend",e=>flameEval(e));
+      const b=$("shelterBtn");
+      b.addEventListener("pointerdown",()=>{ flameBtnHold=true; });
+      b.addEventListener("pointerup",()=>{ flameBtnHold=false; });
+      b.addEventListener("pointerleave",()=>{ flameBtnHold=false; });
+    }
+    if(!flameDone) flameRender();
+    flameStop(); flameRaf=requestAnimationFrame(flameLoop);
+  }
+
+  /* ===== LEVEL 7 — 좌우 노 젓기(폭풍): 동행과 박자 맞춰 좌우 번갈아 ===== */
+  function rowRender(){
+    const pct = Math.min(100, Math.round(rowCount / rowNeed * 100));
+    $("rowFill").style.width = pct + "%";
+    $("oarL").classList.toggle("next", !rowDone && rowNext==='left');
+    $("oarR").classList.toggle("next", !rowDone && rowNext==='right');
+    const b=$("rowBoat"); if(b) b.style.transform = "translateX(" + (rowNext==='left' ? -3 : 3) + "px)";
+    $("rowGauge").textContent = CUR.l7rowPrefix + pct + "%";
+  }
+  function rowStroke(side){
+    if(rowDone || side !== rowNext) return;     // 좌우 번갈아만 인정(틀려도 벌점 없음)
+    rowCount++; rowNext = side==='left' ? 'right' : 'left';
+    const o = side==='left' ? $("oarL") : $("oarR");
+    o.classList.add("stroke"); setTimeout(()=>o.classList.remove("stroke"), 120);
+    rowRender();
+    if(rowCount >= rowNeed) rowComplete();
+  }
+  function rowComplete(){
+    if(rowDone) return; rowDone=true;
+    $("oarL").classList.remove("next"); $("oarR").classList.remove("next");
+    $("rowGauge").textContent = CUR.l7set;
+    setTimeout(advance, 1000);                  // lv7 → done
+  }
+  function rowReset(){
+    rowCount=0; rowNext='left'; rowDone=false;
+    const f=$("rowFill"); if(f) f.style.width="0%";
+    ["oarL","oarR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
+    if($("rowGauge")) rowRender();
+  }
+  function rowInit(){
+    if(!rowBound){
+      rowBound=true;
+      $("oarL").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('left'); });
+      $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
+    }
+    rowRender();
+  }
