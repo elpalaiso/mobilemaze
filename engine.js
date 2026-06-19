@@ -68,23 +68,31 @@ const $ = id => document.getElementById(id);
 
   /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
   const SAVE_KEY="mobilemaze.progress";
-  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","lv7","lv8","done"];
+  const RUN = { scenario: SCENARIOS.tutorial };               // 현재 진행 중 시나리오
+  const ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
+  /* 트릭 registry — 트릭별 init/cleanup 계약(향후 reset/fallback/hint도 이리로) */
+  const TRICKS = {
+    press:    {},
+    pinch:    {},
+    tilt:     { init:tiltInit },
+    blow:     { cleanup:stopMic },
+    route:    { init:routeInit },
+    flame:    { init:flameInit, cleanup:flameStop },
+    row:      { init:rowInit },
+    farewell: { init:fwInit },
+  };
+  function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
+    const pt=trickOf(ORDER[curIdx]); if(pt && pt.cleanup) pt.cleanup();   // 떠나는 트릭 정리(registry)
     curIdx = idx;
-    if(ORDER[idx]!=="lv4") stopMic();        // 돛 레벨을 떠나면 마이크 정리
-    if(ORDER[idx]!=="lv6") flameStop();      // 등불 레벨을 떠나면 루프 정리
     document.querySelectorAll(".level").forEach(el=>el.classList.remove("active"));
     const _lv=$(ORDER[idx]); _lv.classList.add("active");
     _lv.style.opacity="0"; requestAnimationFrame(()=>{ _lv.style.transition="opacity .35s ease"; _lv.style.opacity="1"; });
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
-    if(ORDER[idx]==="lv3") tiltInit();        // 기울이기/슬라이더 폴백 준비
-    if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
-    if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
-    if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
-    if(ORDER[idx]==="lv8") fwInit();          // 작별 시퀀스 준비
+    const nt=trickOf(ORDER[idx]); if(nt && nt.init) nt.init();            // 새 트릭 준비(registry)
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function advance(){ show(curIdx+1); }
