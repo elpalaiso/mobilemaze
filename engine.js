@@ -80,7 +80,7 @@ const $ = id => document.getElementById(id);
   /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
   const SAVE_KEY="mobilemaze.progress";
   const RUN = { scenario: SCENARIOS.tutorial };               // 현재 진행 중 시나리오
-  const ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
+  let ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");  // 시나리오 전환 시 startScenario가 갱신
   /* 트릭 registry — 트릭별 init/cleanup 계약(향후 reset/fallback/hint도 이리로) */
   const TRICKS = {   // inc2: 콘텐츠는 매니페스트 text 키 → bind 가 템플릿에 주입(시나리오 재사용 가능)
     press:    { bind:(lv)=>{ const t=lv.text||{};
@@ -121,6 +121,17 @@ const $ = id => document.getElementById(id);
   }
   function advance(){ show(curIdx+1); }
   function loadProgress(){ return scenarioState().step || 0; }
+  /* 시나리오 전환 기계장치 — ORDER·dots를 현재 시나리오에 맞게 동적 생성 */
+  function buildDots(){
+    const n=RUN.scenario.levels.length, d=$("dots");
+    if(d) d.innerHTML = Array.from({length:n},()=>"<i></i>").join("");
+  }
+  function startScenario(id){
+    RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
+    ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
+    buildDots();
+    show(loadProgress());
+  }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
@@ -148,7 +159,7 @@ const $ = id => document.getElementById(id);
 
   /* ===== 초기화 ===== */
   applyLang(detectLang());
-  show(loadProgress());
+  startScenario("tutorial");
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
