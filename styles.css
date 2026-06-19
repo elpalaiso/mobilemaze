@@ -130,6 +130,7 @@
   .share-btn{ display:block; margin:34px auto 0; background:transparent; border:0;
     color:var(--accent); font-size:15px; letter-spacing:.02em; padding:6px 4px; }
   .share-btn:active{ text-decoration:underline; }
-  .back-harbor{ display:block; margin:18px auto 0; background:transparent; border:0;
-    color:var(--dim); opacity:.45; font-size:12px; padding:4px; }
+  .back-harbor{ display:block; margin:22px auto 0; background:transparent;
+    color:var(--dim); font-size:13px; border:1px solid var(--line); border-radius:8px; padding:9px 16px; }
+  .back-harbor:active{ border-color:var(--accent); color:var(--accent); }
   #done-end{ color:var(--dim); font-size:12px; margin-top:22px; opacity:.5; }

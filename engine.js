@@ -138,8 +138,8 @@ const $ = id => document.getElementById(id);
   }
   function runEnding(){
     resetEnding();
-    endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 2000));
-    endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 6000));
+    endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
+    endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 5200));
   }
   function advance(){ show(curIdx+1); }
   function loadProgress(){ return scenarioState().step || 0; }
