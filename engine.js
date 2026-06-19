@@ -246,7 +246,6 @@ const $ = id => document.getElementById(id);
     const page=$("bookPage");
     if(page){
       page.innerHTML="";
-      const h=document.createElement("div"); h.className="book-title"; h.textContent=CUR.storyTitle||""; page.appendChild(h);
       const paras = CUR.storyText || (I18N.ko && I18N.ko.storyText) || [];
       paras.forEach((para,i)=>{
         const sep=(para==="✶");
