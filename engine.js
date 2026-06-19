@@ -39,6 +39,7 @@ const $ = id => document.getElementById(id);
     setT("routeClearBtn",CUR.l5clear);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
     setT("rowGauge",CUR.l7rowPrefix+"0%"); setT("warmGauge",CUR.warmPrefix+"0%");
+    setT("rpGauge",CUR.rpPrefix+"0%"); setT("rpSyncBtn",CUR.rpSyncBtn);
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
     setT("end-stay",CUR.endStay); setCoda();
@@ -107,6 +108,8 @@ const $ = id => document.getElementById(id);
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, bind:(lv)=>{ const t=lv.text||{};
       setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
+    rowpar:   { init:rpInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("rp-tag",CUR[t.tag]); setT("rp-riddle",CUR[t.riddle]); setT("rp-hint",CUR[t.hint]); } },
     farewell: { init:fwInit, cleanup:fwStopLoop, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
@@ -192,6 +195,7 @@ const $ = id => document.getElementById(id);
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
+  let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -207,6 +211,7 @@ const $ = id => document.getElementById(id);
     routeReset();                                     // L5
     flameReset();                                     // L6
     rowReset();                                       // L7
+    rpReset();                                        // 나란히 젓기(새벽 강)
     warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
@@ -504,6 +509,63 @@ const $ = id => document.getElementById(id);
       $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
     }
     rowRender();
+  }
+
+  /* ===== 나란히 젓기(rowpar) — 새벽 강: 아이와 박자 맞춰 두 노를 *동시에*. 단일 포인터=탭 폴백(같은 게이지) ===== */
+  function rpRender(){
+    const pct=Math.min(100, Math.round(rpCount/rpNeed*100));
+    const f=$("rpFill"); if(f) f.style.width=pct+"%";
+    const l=$("rpL"), r=$("rpR");
+    if(l) l.classList.toggle("next", !rpDone); if(r) r.classList.toggle("next", !rpDone);
+    const g=$("rpGauge"); if(g) g.textContent = CUR.rpPrefix + pct + "%";
+  }
+  function rpTally(){                      // 두 노가 *함께* 눌렸을 때 1스트로크(디바운스)
+    if(rpDone) return;
+    if(rpLeftDown && rpRightDown){
+      const now=Date.now();
+      if(now - rpLast > 260){
+        rpLast=now; rpCount++; haptic(8);
+        [$("rpL"),$("rpR")].forEach(o=>{ if(o){ o.classList.add("stroke"); setTimeout(()=>o.classList.remove("stroke"),120); } });
+        rpRender();
+        if(rpCount>=rpNeed) rpComplete();
+      }
+    }
+  }
+  function rpTap(){                         // 단일 포인터(데스크탑) 폴백 — 같은 게이지 공유
+    if(rpDone) return;
+    const now=Date.now(); if(now-rpLast<120) return; rpLast=now;
+    rpCount++; haptic(8); rpRender();
+    if(rpCount>=rpNeed) rpComplete();
+  }
+  function rpComplete(){
+    if(rpDone) return; rpDone=true; haptic([0,80,40,120]);
+    const l=$("rpL"), r=$("rpR"); if(l) l.classList.remove("next"); if(r) r.classList.remove("next");
+    const g=$("rpGauge"); if(g) g.textContent = CUR.rpSet;
+    setTimeout(advance, 1000);
+  }
+  function rpReset(){
+    rpCount=0; rpLeftDown=false; rpRightDown=false; rpLast=0; rpDone=false;
+    const f=$("rpFill"); if(f) f.style.width="0%";
+    ["rpL","rpR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
+    if($("rpGauge")) rpRender();
+  }
+  function rpInit(){
+    if(!rpBound){
+      rpBound=true;
+      const L=$("rpL"), R=$("rpR");
+      L.addEventListener("pointerdown",e=>{ e.preventDefault(); rpLeftDown=true; rpTally(); });
+      L.addEventListener("pointerup",()=>{ rpLeftDown=false; });
+      L.addEventListener("pointerleave",()=>{ rpLeftDown=false; });
+      R.addEventListener("pointerdown",e=>{ e.preventDefault(); rpRightDown=true; rpTally(); });
+      R.addEventListener("pointerup",()=>{ rpRightDown=false; });
+      R.addEventListener("pointerleave",()=>{ rpRightDown=false; });
+      const fb=$("rpSyncBtn");
+      if(fb){
+        fb.addEventListener("pointerdown",e=>{ e.preventDefault(); rpTap(); });
+        if(!('ontouchstart' in window)) fb.style.display="";   // 터치 미지원 → 탭 폴백 노출
+      }
+    }
+    rpRender();
   }
 
   /* ===== 체온 나누기(warm): 떨고 있는 강아지를 길게 눌러 데움(짧은 탭=놓침) ===== */

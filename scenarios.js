@@ -29,4 +29,13 @@ const SCENARIOS = {
     ],
     ending: { title:"snowDoneTitle", body:"snowDoneBody", end:"snowDoneEnd", coda:"snowCoda" },
   },
+  /* 새벽 강 — 이사 가는 아이. 신규 트릭 '나란히 젓기'(두 노 동시). 돌아봄의 반전 + 종이배 코다. */
+  dawn_river: {
+    id: "dawn_river",
+    titleKey: "sc_dawn",
+    levels: [
+      { sec:"lvRowPar", trick:"rowpar", text:{ tag:"dawnTag", riddle:"dawnRiddle", hint:"dawnHint" } },
+    ],
+    ending: { title:"dawnDoneTitle", body:"dawnDoneBody", end:"dawnDoneEnd", coda:"dawnCoda" },
+  },
 };
