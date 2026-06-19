@@ -182,7 +182,10 @@ const $ = id => document.getElementById(id);
   applyLang(detectLang());
   startScenario("tutorial");
   if(!SAVE.seenTutorial){ showView("gate"); } else { buildHub(); showView("hub"); }   // 첫 방문=게이트, 기존=항구
-  $("menuBtn").addEventListener("click",()=>{ buildHub(); showView("hub"); });
+  $("menuBtn").addEventListener("click",()=>{
+    if($("hub").style.display!=="none"){ showView("play"); }   // 이미 열림 → 닫고 플레이로(토글)
+    else { buildHub(); showView("hub"); }
+  });
   $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); showView("play"); });
   $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); buildHub(); showView("hub"); });
   $("resetBtn").addEventListener("click",()=>{
