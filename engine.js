@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
   const setT = (id,t) => { const e=$(id); if(e) e.textContent=t; };
   let CUR = I18N.ko;
+  let curView = "play";   // 현재 화면(play/hub/gate) — 상단 타이틀 분기용
   const LANG_KEY = "mobilemaze.lang";
 
   /* ===== 저장 v2 — 시나리오별 진행 + 언어. 구 progress/lang 1회 마이그레이션 ===== */
@@ -29,7 +30,7 @@ const $ = id => document.getElementById(id);
     document.documentElement.lang = lang;
     SAVE.lang=lang; persist();
 
-    setT("t-title",CUR.title); setT("resetBtn",CUR.reset);
+    refreshTitle(); setT("resetBtn",CUR.reset);
     { const mb=$("menuBtn"); if(mb) mb.textContent="☰ "+CUR.menu; }
     const sub=$("t-subtitle"); if(sub){ sub.textContent=CUR.subtitle||""; sub.style.display=CUR.subtitle?"":"none"; }
     // 트릭 chrome (레벨 콘텐츠는 매니페스트 → registry bind 가 담당)
@@ -137,8 +138,15 @@ const $ = id => document.getElementById(id);
   }
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
   function showView(v){
+    curView=v;
     ["play","hub","gate"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
     const mb=$("menuBtn"); if(mb) mb.classList.toggle("on", v==="hub");   // 허브 열림=강조(언어 토글처럼)
+    refreshTitle();
+  }
+  /* 상단 타이틀: play=현재 시나리오 제목 / hub·gate=게임 제목("밤바다") */
+  function refreshTitle(){
+    const t=$("t-title"); if(!t) return;
+    t.textContent = (curView==="play") ? (CUR[RUN.scenario.titleKey]||CUR.title) : CUR.title;
   }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
