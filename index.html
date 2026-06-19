@@ -78,6 +78,18 @@
     to{transform:translateX(2px) rotate(5deg); opacity:.9;} }
   .shelter{height:8px; background:var(--line); border-radius:5px; margin-top:16px; overflow:hidden;}
   .shelter .fill{height:100%; width:0%; background:var(--accent); transition:width .12s;}
+  /* L7 좌우 노 젓기 */
+  .rowbox{display:flex; align-items:center; gap:10px; background:#0b0f1a;
+    border:1px solid var(--line); border-radius:12px; padding:18px 12px;}
+  .oar{flex:0 0 66px; height:88px; background:#141b2e; border:1px solid var(--line);
+    border-radius:12px; color:var(--dim); font-size:26px; touch-action:none; transition:.1s;}
+  .oar.next{border-color:var(--accent); color:var(--accent); animation:oarpulse 1s infinite;}
+  .oar.stroke{transform:scale(.92); background:var(--accent); color:#1a1206;}
+  @keyframes oarpulse{0%,100%{opacity:1;} 50%{opacity:.5;}}
+  .rowmid{flex:1; text-align:center;}
+  .boat{font-size:34px; transition:transform .15s;}
+  .rowmeter{height:8px; background:var(--line); border-radius:5px; margin-top:12px; overflow:hidden;}
+  .rowmeter .fill{height:100%; width:0%; background:var(--accent); transition:width .15s;}
   .clear{text-align:center; padding:30px 12px;}
   .clear h2{color:var(--accent); margin:0 0 8px;}
   .dots{display:flex; gap:6px; justify-content:center; margin-bottom:18px;}
@@ -97,7 +109,7 @@
     <h1 id="t-title"></h1>
     <p id="t-subtitle"></p>
   </header>
-  <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <button id="resetBtn" class="reset"></button>
 
   <!-- LEVEL 1 : 길게 누르기 (튜토리얼) -->
@@ -192,6 +204,22 @@
     <div class="hint" id="l6-hint"></div>
   </section>
 
+  <!-- LEVEL 7 : 좌우 노 젓기 — 3막 폭풍 -->
+  <section class="level" id="lv7">
+    <div class="tag" id="l7-tag"></div>
+    <div class="riddle" id="l7-riddle"></div>
+    <div class="rowbox">
+      <button class="oar" id="oarL">🚣</button>
+      <div class="rowmid">
+        <div class="boat" id="rowBoat">⛵</div>
+        <div class="rowmeter"><div class="fill" id="rowFill"></div></div>
+      </div>
+      <button class="oar" id="oarR">🚣</button>
+    </div>
+    <div class="gauge" id="rowGauge"></div>
+    <div class="hint" id="l7-hint"></div>
+  </section>
+
   <!-- CLEAR -->
   <section class="level" id="done">
     <div class="clear">
@@ -249,9 +277,14 @@
       l6shelterPrefix:"보호: ",
       l6shelterBtn:"🤚 한 손으로 가리기 (길게)",
       l6set:"불꽃이 잦아들지 않는다… 곁에 온기가 머문다 🕯️",
+      l7tag:"폭풍 1 · 노 젓기",
+      l7riddle:"🌊 파도가 거세다. 혼자선 못 건넌다.\n동행과 박자를 맞춰, 좌우로 번갈아 노를 저어라.",
+      l7hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
+      l7rowPrefix:"전진: ",
+      l7set:"폭풍을 넘었다… 멀리, 별이 보인다 ✦",
       doneTitle:"항해 🌅",
-      doneBody:"별을 이어 길을 찾고, 바람을 받아 나아간다.<br>밤바다를, 마침내 건넌다.",
-      doneEnd:"— 1막 끝 · 다음 항해는 곧 —",
+      doneBody:"달빛과 별, 바람과 등불, 그리고 폭풍을 넘어.<br>밤바다 한가운데, 잠시 숨을 고른다.",
+      doneEnd:"— 다음 항해(작별)는 곧 —",
       answers:["달빛","등대","수평선","북극성"]
     },
     en: {
@@ -298,9 +331,14 @@
       l6shelterPrefix:"shelter: ",
       l6shelterBtn:"🤚 shield with one hand (hold)",
       l6set:"The flame holds steady… a warmth stays beside you 🕯️",
+      l7tag:"STORM 1 · row",
+      l7riddle:"🌊 The waves are fierce — you can't cross alone.\nMatch your companion's rhythm: pull the oars, left and right in turn.",
+      l7hint:"Hint: tap the *glowing* oar, alternating left and right.",
+      l7rowPrefix:"progress: ",
+      l7set:"Through the storm… far off, stars appear ✦",
       doneTitle:"Voyage 🌅",
-      doneBody:"Connect the stars to find the way, catch the wind, and go.<br>At last, across the night sea.",
-      doneEnd:"— end of act 1 · next voyage soon —",
+      doneBody:"Moonlight and stars, wind and lantern, and through the storm.<br>Mid–night-sea, you catch your breath.",
+      doneEnd:"— the next voyage (farewell) comes soon —",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }
   };
@@ -336,6 +374,8 @@
     setT("l5-reveal",CUR.l5reveal); setT("routeClearBtn",CUR.l5clear);
     setT("l6-tag",CUR.l6tag); setT("l6-riddle",CUR.l6riddle); setT("l6-hint",CUR.l6hint);
     setT("shelterBtn",CUR.l6shelterBtn); setT("flameGauge",CUR.l6shelterPrefix+"0%");
+    setT("l7-tag",CUR.l7tag); setT("l7-riddle",CUR.l7riddle); setT("l7-hint",CUR.l7hint);
+    setT("rowGauge",CUR.l7rowPrefix+"0%");
     setT("done-title",CUR.doneTitle); setT("done-end",CUR.doneEnd);
     $("done-body").innerHTML = CUR.doneBody;
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -361,7 +401,7 @@
 
   /* ===== 진행/네비 — 현재 레벨 기준(정답 인덱스와 분리) ===== */
   const SAVE_KEY="mobilemaze.progress";
-  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","done"];
+  const ORDER=["lv1","lv2","lv3","lv4","lv5","lv6","lv7","done"];
   let curIdx = 0;
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
@@ -374,6 +414,7 @@
     window.scrollTo(0,0);
     if(ORDER[idx]==="lv5") routeInit();       // 항로 캔버스는 보일 때 크기/렌더
     if(ORDER[idx]==="lv6") flameInit();       // 등불 감싸기 루프 시작
+    if(ORDER[idx]==="lv7") rowInit();         // 노 젓기 준비
     try{ localStorage.setItem(SAVE_KEY,String(idx)); }catch(e){}
   }
   function advance(){ show(curIdx+1); }
@@ -383,6 +424,7 @@
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
+  let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -393,6 +435,7 @@
     $("windBtn").style.display=""; $("oarBtn").style.display="none";
     routeReset();                                     // L5
     flameReset();                                     // L6
+    rowReset();                                       // L7
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
   }
@@ -614,6 +657,44 @@
     }
     if(!flameDone) flameRender();
     flameStop(); flameRaf=requestAnimationFrame(flameLoop);
+  }
+
+  /* ===== LEVEL 7 — 좌우 노 젓기(폭풍): 동행과 박자 맞춰 좌우 번갈아 ===== */
+  function rowRender(){
+    const pct = Math.min(100, Math.round(rowCount / rowNeed * 100));
+    $("rowFill").style.width = pct + "%";
+    $("oarL").classList.toggle("next", !rowDone && rowNext==='left');
+    $("oarR").classList.toggle("next", !rowDone && rowNext==='right');
+    const b=$("rowBoat"); if(b) b.style.transform = "translateX(" + (rowNext==='left' ? -3 : 3) + "px)";
+    $("rowGauge").textContent = CUR.l7rowPrefix + pct + "%";
+  }
+  function rowStroke(side){
+    if(rowDone || side !== rowNext) return;     // 좌우 번갈아만 인정(틀려도 벌점 없음)
+    rowCount++; rowNext = side==='left' ? 'right' : 'left';
+    const o = side==='left' ? $("oarL") : $("oarR");
+    o.classList.add("stroke"); setTimeout(()=>o.classList.remove("stroke"), 120);
+    rowRender();
+    if(rowCount >= rowNeed) rowComplete();
+  }
+  function rowComplete(){
+    if(rowDone) return; rowDone=true;
+    $("oarL").classList.remove("next"); $("oarR").classList.remove("next");
+    $("rowGauge").textContent = CUR.l7set;
+    setTimeout(advance, 1000);                  // lv7 → done
+  }
+  function rowReset(){
+    rowCount=0; rowNext='left'; rowDone=false;
+    const f=$("rowFill"); if(f) f.style.width="0%";
+    ["oarL","oarR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
+    if($("rowGauge")) rowRender();
+  }
+  function rowInit(){
+    if(!rowBound){
+      rowBound=true;
+      $("oarL").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('left'); });
+      $("oarR").addEventListener("pointerdown",e=>{ e.preventDefault(); rowStroke('right'); });
+    }
+    rowRender();
   }
 </script>
 </body>
