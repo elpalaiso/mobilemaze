@@ -207,6 +207,7 @@ const $ = id => document.getElementById(id);
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
+    revealCancel();                                   // 대기 중인 자동진행 타이머 취소
     $("pressBox").classList.remove("lit");            // L1
     $("tiltBox").classList.remove("show");            // L3
     { const tf=$("tiltFallback"); if(tf) tf.style.display="none"; tiltGotEvent=false; }
@@ -247,10 +248,15 @@ const $ = id => document.getElementById(id);
     }); }
   { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
 
+  /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 */
+  let revealAdv=false, revealTimer=null;
+  function revealAdvance(){ if(revealAdv) return; revealAdv=true; revealTimer=setTimeout(()=>{ revealAdv=false; revealTimer=null; advance(); }, 3000); }
+  function revealCancel(){ if(revealTimer){ clearTimeout(revealTimer); revealTimer=null; } revealAdv=false; }
+
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
   (function(){
     const box=$("pressBox"); let t=null;
-    const start=e=>{ t=setTimeout(()=>{ box.classList.add("lit"); haptic(20); },600); };
+    const start=e=>{ t=setTimeout(()=>{ box.classList.add("lit"); haptic(20); revealAdvance(); },600); };
     const end=e=>{ clearTimeout(t); };
     box.addEventListener("touchstart",start,{passive:true});
     box.addEventListener("touchend",end);
@@ -260,7 +266,7 @@ const $ = id => document.getElementById(id);
   })();
 
   /* ===== LEVEL 3 — 기울이기(deviceorientation) + 슬라이더 폴백(몰입형 미러) ===== */
-  function tiltReveal(){ const b=$("tiltBox"); if(!b.classList.contains("show")) haptic(20); b.classList.add("show"); }
+  function tiltReveal(){ const b=$("tiltBox"); if(!b.classList.contains("show")){ haptic(20); revealAdvance(); } b.classList.add("show"); }
   function tiltOnTilt(e){
     tiltGotEvent = true;
     const g = Math.round(e.gamma||0);
@@ -395,6 +401,7 @@ const $ = id => document.getElementById(id);
     if(routeDone) return; routeDone=true; haptic([0,80,40,120]);
     $("l5-reveal").classList.add("show");
     routeRender();
+    revealAdvance();
   }
   function routeReset(){
     routeStroke=[]; routeDone=false;
