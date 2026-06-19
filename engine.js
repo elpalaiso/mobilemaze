@@ -76,7 +76,7 @@ const $ = id => document.getElementById(id);
   function loadProgress(){ const v=parseInt(localStorage.getItem(SAVE_KEY)||"0",10); return isNaN(v)?0:v; }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
-  let audioCtx=null, micStream=null, micRaf=null, sailDone=false;
+  let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
@@ -86,7 +86,7 @@ const $ = id => document.getElementById(id);
     $("pressBox").classList.remove("lit");            // L1
     $("tiltBox").classList.remove("show");            // L3
     $("gauge").textContent = CUR.gaugeInit;
-    sailDone=false; setSail(0,0);                     // L4
+    sailDone=false; oarFill=0; setSail(0,0);          // L4
     $("windBtn").style.display=""; $("oarBtn").style.display="none";
     routeReset();                                     // L5
     flameReset();                                     // L6
@@ -153,11 +153,19 @@ const $ = id => document.getElementById(id);
     if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
     if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; }
   }
-  function sailComplete(){
+  function sailComplete(msg){
     if(sailDone) return; sailDone=true;
-    $("windGauge").textContent = CUR.l4set;
+    $("windGauge").textContent = msg || CUR.l4set;
     stopMic();
     setTimeout(advance, 800);   // lv4 → lv5
+  }
+  /* 마이크 폴백 = 스킵이 아니라 '같은 게이지를 탭으로 채워' 같은 출항 흐름으로 */
+  function oarRow(){
+    if(sailDone) return;
+    oarFill = Math.min(100, oarFill + 12);
+    $("windFill").style.width = oarFill + "%";          // 마이크와 동일한 게이지 공유
+    $("windGauge").textContent = CUR.l4oarPrefix + Math.round(oarFill) + "%";
+    if(oarFill >= 100) sailComplete(CUR.l4oarSet);
   }
   async function startWind(){
     try{
@@ -187,7 +195,7 @@ const $ = id => document.getElementById(id);
     }
   }
   $("windBtn").addEventListener("click",startWind);
-  $("oarBtn").addEventListener("click",advance);
+  $("oarBtn").addEventListener("pointerdown",e=>{ e.preventDefault(); oarRow(); });
 
   /* ===== LEVEL 5 — 손가락 긋기(항로 그리기): 별을 모두 이으면 길잡이 별이 드러남 ===== */
   function routeInit(){
