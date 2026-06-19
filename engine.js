@@ -71,17 +71,26 @@ const $ = id => document.getElementById(id);
   const RUN = { scenario: SCENARIOS.tutorial };               // 현재 진행 중 시나리오
   const ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
   /* 트릭 registry — 트릭별 init/cleanup 계약(향후 reset/fallback/hint도 이리로) */
-  const TRICKS = {
-    press:    { bind:(lv)=>{ const t=lv.text||{};   // inc2 슬라이스1: 콘텐츠를 매니페스트 키로 바인딩
+  const TRICKS = {   // inc2: 콘텐츠는 매니페스트 text 키 → bind 가 템플릿에 주입(시나리오 재사용 가능)
+    press:    { bind:(lv)=>{ const t=lv.text||{};
       setT("l1-tag",CUR[t.tag]); setT("l1-riddle",CUR[t.riddle]); setT("l1-press",CUR[t.press]);
       setT("l1-reveal",CUR[t.reveal]); setT("l1-hint",CUR[t.hint]); } },
-    pinch:    {},
-    tilt:     { init:tiltInit },
-    blow:     { cleanup:stopMic },
-    route:    { init:routeInit },
-    flame:    { init:flameInit, cleanup:flameStop },
-    row:      { init:rowInit },
-    farewell: { init:fwInit },
+    pinch:    { bind:(lv)=>{ const t=lv.text||{};
+      setT("l2-tag",CUR[t.tag]); setT("l2-riddle",CUR[t.riddle]); setT("l2-before",CUR[t.before]);
+      setT("l2-tiny",CUR[t.tiny]); setT("l2-after",CUR[t.after]); setT("l2-hint",CUR[t.hint]); } },
+    tilt:     { init:tiltInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("l3-tag",CUR[t.tag]); setT("l3-riddle",CUR[t.riddle]); setT("l3-secret",CUR[t.secret]);
+      setT("l3-hint",CUR[t.hint]); setT("l3-fallback-hint",CUR[t.fbhint]); } },
+    blow:     { cleanup:stopMic, bind:(lv)=>{ const t=lv.text||{};
+      setT("l4-tag",CUR[t.tag]); setT("l4-riddle",CUR[t.riddle]); setT("l4-hint",CUR[t.hint]); } },
+    route:    { init:routeInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("l5-tag",CUR[t.tag]); setT("l5-riddle",CUR[t.riddle]); setT("l5-hint",CUR[t.hint]); setT("l5-reveal",CUR[t.reveal]); } },
+    flame:    { init:flameInit, cleanup:flameStop, bind:(lv)=>{ const t=lv.text||{};
+      setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
+    row:      { init:rowInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
+    farewell: { init:fwInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
