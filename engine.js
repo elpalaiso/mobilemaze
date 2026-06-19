@@ -201,6 +201,7 @@ const $ = id => document.getElementById(id);
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
   let foldCount=0, foldNeed=3, foldDone=false, foldBound=false, foldSX=0, foldSY=0, foldDrag=false;
+  let revealAdv=false, revealTimer=null;   // L1/L3/L5 자동진행 — resetLevels보다 먼저 선언(TDZ 방지)
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -248,8 +249,7 @@ const $ = id => document.getElementById(id);
     }); }
   { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
 
-  /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 */
-  let revealAdv=false, revealTimer=null;
+  /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 (상태는 상단 선언) */
   function revealAdvance(){ if(revealAdv) return; revealAdv=true; revealTimer=setTimeout(()=>{ revealAdv=false; revealTimer=null; advance(); }, 3000); }
   function revealCancel(){ if(revealTimer){ clearTimeout(revealTimer); revealTimer=null; } revealAdv=false; }
 
