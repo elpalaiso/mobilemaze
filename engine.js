@@ -206,6 +206,7 @@ const $ = id => document.getElementById(id);
   let foldCount=0, foldNeed=3, foldDone=false, foldBound=false, foldSX=0, foldSY=0, foldDrag=false;
   let revealAdv=false, revealTimer=null;   // L1/L3/L5 자동진행 — resetLevels보다 먼저 선언(TDZ 방지)
   let emberProg=0, emberTarget=0, emberCarry=false, emberDone=false, emberBound=false, emberRaf=null;  // 불씨 옮기기
+  let emberTrackLeft=0, emberX0=0, emberX1=0;   // 두 등불 중심(트랙 기준 px)
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -530,13 +531,21 @@ const $ = id => document.getElementById(id);
   }
 
   /* ===== 불씨 옮기기(ember) — 등불 항구: 손 떼지 않고 *천천히* 빈 등불로. 떼면 꺼짐, 빠르면 진행 안 됨(레이트캡) ===== */
+  function emberMeasure(){            // 두 등불 중심을 트랙 기준 px로 — 시작=왼 등불, 100%=오른 촛불에 딱
+    const track=$("emberTrack"), from=$("emberFrom"), to=$("emberTo");
+    if(!track||!from||!to) return;
+    const tr=track.getBoundingClientRect(), fr=from.getBoundingClientRect(), tor=to.getBoundingClientRect();
+    emberTrackLeft = tr.left;
+    emberX0 = (fr.left+fr.right)/2 - tr.left;
+    emberX1 = (tor.left+tor.right)/2 - tr.left;
+  }
   function emberXToPct(clientX){
-    const box=$("emberBox"); if(!box) return 0;
-    const r=box.getBoundingClientRect();
-    return Math.max(0, Math.min(100, (clientX - r.left) / r.width * 100));
+    if(emberX1<=emberX0) return 0;
+    const fx = clientX - emberTrackLeft;
+    return Math.max(0, Math.min(100, (fx - emberX0)/(emberX1 - emberX0)*100));
   }
   function emberRender(){
-    const d=$("emberDot"); if(d) d.style.left = emberProg + "%";
+    const d=$("emberDot"); if(d) d.style.left = (emberX0 + (emberX1-emberX0)*emberProg/100) + "px";
     const to=$("emberTo"); if(to) to.classList.toggle("lit", emberDone);
     const g=$("emberGauge");
     if(g) g.textContent = emberDone ? CUR.emberSet : (CUR.emberPrefix + Math.round(emberProg) + "%");
@@ -560,28 +569,30 @@ const $ = id => document.getElementById(id);
   }
   function emberOutReset(){            // 손 떼서 꺼짐 — 처음부터(벌점 없음, 배웅에 관대)
     emberCarry=false; emberProg=0; emberTarget=0;
-    const d=$("emberDot"); if(d){ d.classList.add("out"); d.style.left="0%";
+    const d=$("emberDot"); if(d){ d.classList.add("out");
       setTimeout(()=>{ const e=$("emberDot"); if(e && !emberDone) e.classList.remove("out"); }, 600); }
-    const g=$("emberGauge"); if(g) g.textContent = CUR.emberOut;
+    emberRender();
+    const g=$("emberGauge"); if(g) g.textContent = CUR.emberOut;   // render의 0% 덮어 꺼짐 메시지
   }
   function emberReset(){
     emberStop(); emberProg=0; emberTarget=0; emberCarry=false; emberDone=false;
-    const d=$("emberDot"); if(d){ d.classList.remove("out"); d.style.left="0%"; }
+    const d=$("emberDot"); if(d) d.classList.remove("out");
     const to=$("emberTo"); if(to) to.classList.remove("lit");
-    const g=$("emberGauge"); if(g){ g.classList.remove("done"); g.textContent=CUR.emberPrefix+"0%"; }
+    const g=$("emberGauge"); if(g) g.classList.remove("done");
+    emberRender();
   }
   function emberInit(){
     if(!emberBound){
       emberBound=true;
       const box=$("emberBox");
-      box.addEventListener("pointerdown",e=>{ if(emberDone) return; e.preventDefault(); emberCarry=true; emberTarget=emberXToPct(e.clientX); });
+      box.addEventListener("pointerdown",e=>{ if(emberDone) return; e.preventDefault(); emberMeasure(); emberCarry=true; emberTarget=emberXToPct(e.clientX); });
       box.addEventListener("pointermove",e=>{ if(emberCarry && !emberDone){ e.preventDefault(); emberTarget=emberXToPct(e.clientX); } });
       const lift=()=>{ if(emberCarry && !emberDone && emberProg < 99.5) emberOutReset(); else emberCarry=false; };
       box.addEventListener("pointerup",lift);
       box.addEventListener("pointerleave",lift);
       box.addEventListener("pointercancel",lift);
     }
-    emberReset();
+    emberMeasure(); emberReset();
     emberStop(); emberRaf=requestAnimationFrame(emberLoop);
   }
 
