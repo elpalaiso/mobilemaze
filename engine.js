@@ -169,17 +169,25 @@ const $ = id => document.getElementById(id);
     if(s) s.classList.remove("in"); if(c) c.classList.remove("in");
     const sq=$("endSeq"); if(sq) sq.innerHTML="";
   }
-  function seqStep(){     // 다음 줄을 *추가*(누적). 탭/타이머 공용.
-    seqClearTimer();
-    const seqEl=$("endSeq");
-    if(!seqLines || !seqEl) return;
-    if(seqIdx >= seqLines.length){ seqFinish(); return; }
-    const line=seqLines[seqIdx]; seqIdx++;
+  function seqAppend(line){   // 한 줄 추가 + 페이드인
+    const seqEl=$("endSeq"); if(!seqEl) return;
     const p=document.createElement("p"); p.className="seq-line"; p.textContent=line;
     seqEl.appendChild(p);
     requestAnimationFrame(()=>{ p.classList.add("in"); try{ p.scrollIntoView({behavior:"smooth", block:"nearest"}); }catch(e){} });
-    if(seqIdx < seqLines.length) seqTimer=setTimeout(seqStep, (line.length<=12?650:950));   // 빠른 촤르륵(흐름 유지)
-    else seqTimer=setTimeout(seqFinish, 1100);
+  }
+  function seqRun(){      // 단편소설처럼 *쫙* — 빠른 캐스케이드로 줄줄이 흘러내림
+    seqClearTimer();
+    const seqEl=$("endSeq"); if(!seqLines || !seqEl) return;
+    if(seqIdx >= seqLines.length){ seqFinish(); return; }
+    seqAppend(seqLines[seqIdx]); seqIdx++;
+    if(seqIdx < seqLines.length) seqTimer=setTimeout(seqRun, 130);   // 쫙(빠른 촤르륵)
+    else seqTimer=setTimeout(seqFinish, 600);
+  }
+  function seqRevealAll(){   // 탭 = 남은 줄 즉시 다 + 마무리
+    seqClearTimer();
+    if(!seqLines) return;
+    while(seqIdx < seqLines.length){ seqAppend(seqLines[seqIdx]); seqIdx++; }
+    seqFinish();
   }
   function seqFinish(){
     seqClearTimer();
@@ -202,9 +210,9 @@ const $ = id => document.getElementById(id);
       seqLines=seqArr; seqIdx=0; seqFinished=false;
       if(!seqTapBound){ seqTapBound=true; const dn=$("done"); if(dn) dn.addEventListener("click",ev=>{
         if(ev.target.closest("#endCard")) return;        // 카드 버튼은 그대로
-        if(seqLines && !seqFinished) seqStep();           // 탭 = 다음 줄 즉시(마지막이면 마무리)
+        if(seqLines && !seqFinished) seqRevealAll();       // 탭 = 남은 줄 즉시 다
       }); }
-      endingTimers.push(setTimeout(seqStep, 1400));        // 도착 후 시작
+      endingTimers.push(setTimeout(seqRun, 800));          // 도착 후 곧 시작
     } else {
       endingTimers.push(setTimeout(()=>{ const s=$("endStayBeat"); if(s) s.classList.add("in"); }, 1000));
       endingTimers.push(setTimeout(()=>{ const c=$("endCard"); if(c) c.classList.add("in"); }, 2000));
@@ -240,6 +248,11 @@ const $ = id => document.getElementById(id);
                   : (curView==="book") ? ((bookSeries && bookSeries.story && CUR[bookSeries.story.titleKey]) || CUR.storyTitle || CUR.title)
                   : CUR.title;
   }
+  function knotCount(scid){   // 매듭(단일 레벨) 진행 — 항해 카드와 동일 (done/total)
+    const sc=SCENARIOS[scid], st=SAVE.scenarios[scid]||{};
+    const total=sc?sc.levels.length:1, done=Math.min(st.step||0,total);
+    return { done, total, cleared:!!st.cleared };
+  }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
     setT("hubTitle", CUR.hubTitle);
@@ -261,22 +274,24 @@ const $ = id => document.getElementById(id);
       // 그 시리즈의 단편(있고 텍스트 준비됐을 때만)
       if(series.story && CUR[series.story.textKey]){
         const sid=series.id;
+        const keys = series.knots ? Object.keys(series.knots) : [];
+        const knotsDone = keys.filter(k=>{ const st=SAVE.scenarios[series.knots[k]]; return st && st.cleared; }).length;
         const book=document.createElement("button"); book.className="hubcard bookcard";
-        book.innerHTML="📖 "+(CUR[series.story.titleKey]||"")+' <span class="hubcount story">'+(CUR[series.story.tagKey]||"")+'</span>';
+        book.innerHTML="📖 "+(CUR[series.story.titleKey]||"")+' <span class="hubcount story">'+(CUR[series.story.tagKey]||"")+'</span>'+
+          (keys.length?' <span class="hubcount'+(knotsDone>=keys.length?' full':'')+'">('+knotsDone+'/'+keys.length+')</span>':'');
         book.addEventListener("click",()=>openBook(sid));
         list.appendChild(book);
-        // 소설 중심 시리즈: 단편 하위로 매듭 트릭 들여쓰기 표시(구조 가시화 + 직접 점프)
-        if(series.knots){
-          Object.keys(series.knots).forEach(key=>{
-            const scid=series.knots[key], sc=SCENARIOS[scid]; if(!sc) return;
-            const st=SAVE.scenarios[scid]||{};
-            const sub=document.createElement("button"); sub.className="hubcard knotsub";
-            const label=key==="erase"?CUR.knotEraseLabel:CUR.knotRoadLabel;
-            sub.innerHTML='<span class="knotbranch">└</span> '+(st.cleared?"✓ ":"")+label;
-            sub.addEventListener("click",()=>openKnot(scid, true));   // 허브서 실행 → 항구로 복귀
-            list.appendChild(sub);
-          });
-        }
+        // 소설 중심 시리즈: 단편 하위로 매듭 트릭 들여쓰기 표시(구조 가시화 + 직접 점프 + 완료/개수)
+        keys.forEach(key=>{
+          const scid=series.knots[key], sc=SCENARIOS[scid]; if(!sc) return;
+          const c=knotCount(scid);
+          const sub=document.createElement("button"); sub.className="hubcard knotsub";
+          const label=key==="erase"?CUR.knotEraseLabel:CUR.knotRoadLabel;
+          sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+label+
+            ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
+          sub.addEventListener("click",()=>openKnot(scid, true));   // 허브서 실행 → 항구로 복귀
+          list.appendChild(sub);
+        });
       }
       // 아직 비어있는 시리즈 = "곧" 표시(골격 가시화)
       if(series.comingSoon && !(series.scenarios||[]).length){
@@ -301,10 +316,10 @@ const $ = id => document.getElementById(id);
           el=document.createElement("button"); el.className="knot-btn";
           if(scid) el.id="knot-"+scid;   // 복귀 시 이 자리로 스크롤
           const label = key==="erase" ? CUR.knotEraseLabel : CUR.knotRoadLabel;
-          const st = scid && SAVE.scenarios[scid];
-          const done = st && st.cleared;
-          el.textContent = (done?"✓ ":"▶ ")+(label||key);
-          if(done) el.classList.add("done");
+          const c = scid ? knotCount(scid) : {done:0,total:1,cleared:false};
+          el.innerHTML = (c.cleared?"✓ ":"▶ ")+(label||key)+
+            ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
+          if(c.cleared) el.classList.add("done");
           if(scid) el.addEventListener("click",()=>openKnot(scid));
         } else {
           const sep=(para==="✶");
