@@ -69,7 +69,7 @@ const SCENARIOS = {
     id: "tower_t1", titleKey: "sc_tower_t1", series:"tower", quiz:true,
     levels: [
       { sec:"lv1", trick:"press", text:{ tag:"qt1pTag", riddle:"qt1pRiddle", press:"qt1pPress", reveal:"qtReveal", hint:"qt1pHint" }, hints:["qt1pH1","qt1pH2","qt1pH3"] },
-      { sec:"lv2", trick:"pinch", ansHash:{ko:7382375430922488,en:3713240614062855}, text:{ tag:"qt1zTag", riddle:"qt1zRiddle", before:"qt1zBefore", tiny:"qt1zTiny", after:"qt1zAfter", hint:"qt1zHint" }, hints:["qt1zH1","qt1zH2","qt1zH3"] },
+      { sec:"lv2", trick:"pinch", ansHash:{ko:5352836329947915,en:2518879951497208}, text:{ tag:"qt1zTag", riddle:"qt1zRiddle", before:"qt1zBefore", tiny:"qt1zTiny", after:"qt1zAfter", hint:"qt1zHint" }, hints:["qt1zH1","qt1zH2","qt1zH3"] },
       { sec:"lv3", trick:"tilt", text:{ tag:"qt1tTag", riddle:"qt1tRiddle", secret:"qtReveal", hint:"qt1tHint", fbhint:"qt1tFbHint" }, hints:["qt1tH1","qt1tH2","qt1tH3"] },
       { sec:"lv4", trick:"blow", text:{ tag:"qt1bTag", riddle:"qt1bRiddle", hint:"qt1bHint" }, hints:["qt1bH1","qt1bH2","qt1bH3"] },
       { sec:"lv5", trick:"route", text:{ tag:"qt1rTag", riddle:"qt1rRiddle", hint:"qt1rHint", reveal:"qtReveal" }, hints:["qt1rH1","qt1rH2","qt1rH3"] },
