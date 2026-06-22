@@ -51,3 +51,22 @@ const SCENARIOS = {
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
 };
+
+/* ===== 스토리 시리즈 =====
+   각 시리즈 = 독립적으로 확장되는 연속 사가(자기 항해들 + 캡스톤 단편). 허브가 시리즈별 섹션으로 렌더.
+   새 시리즈 추가 = 여기 객체 하나 + (있으면) levels.js에 그 시리즈 storyText/제목 키. */
+const SERIES = {
+  boatman: {
+    id: "boatman",
+    titleKey: "seriesBoatman",
+    scenarios: ["tutorial", "snow_lake", "dawn_river", "lantern_harbor"],
+    story: { titleKey: "storyTitle", tagKey: "storyTag", textKey: "storyText" },   // 「건너간 자리」
+  },
+  memory: {
+    id: "memory",
+    titleKey: "seriesMemory",
+    scenarios: [],        // 곧 채워짐 — 측량가/기억 시리즈(MemoryGame 재구성)
+    story: null,
+    comingSoon: true,
+  },
+};

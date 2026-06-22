@@ -132,6 +132,11 @@
     margin:20px 0 10px; position:relative; }
   .bookcard{ border-style:dashed; border-color:#3a4663; }
   .hubcount.story{ color:var(--accent); font-style:italic; }
+  /* 멀티 시리즈 — 항구 섹션 헤더 + "곧" 표시 */
+  .series-head{ text-align:center; color:var(--accent); font-size:13px; letter-spacing:.16em;
+    margin:24px 0 12px; opacity:.9; }
+  #hubList .series-head:first-child{ margin-top:4px; }
+  .series-soon{ text-align:center; color:var(--dim); font-size:12px; opacity:.5; padding:8px 0 2px; }
   /* 책 뷰 — 펼치면 촤르륵 */
   #book{ padding:6px 0 12px; }
   .bookpage{ background:#15110b; border:1px solid #3a3020; border-radius:14px;

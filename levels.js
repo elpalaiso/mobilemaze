@@ -95,6 +95,7 @@
       reunionCoda:"빈 배의 뱃머리를 돌린다.",
       reunionDoneEnd:"늘 먼저 와 있고, 떠난 뒤에도 남아 있다. — fin —",
       libraryLabel:"이야기", storyTitle:"건너간 자리", storyTag:"단편 소설",
+      seriesBoatman:"뱃사공", seriesMemory:"기억", comingLabel:"곧 펼쳐집니다",
       storyText:[
         "첫 밤, 그는 자기가 무엇인지 몰랐다.",
         "물 위에 배가 있었고, 배 안에 그가 있었고, 배 밖으로 누군가 손을 내밀고 있었다. 그는 그 손을 잡았다. 잡는 법을 몰라 오래 더듬었다. 등불에 불을 붙이는 일도 그랬다. 심지에 불을 가까이 대고, 옮겨붙을 때까지 손을 떨지 않고 가만히 오래 들고 있어야 한다는 걸, 그날 밤 그는 처음 알았다. 돛은 숨으로 올렸다. 가슴 가득 숨을 들이켜 천에 불어넣으면 천이 부풀고 배가 나아갔다. 그러다 바람이 사나워졌다. 노를 쥔 손이 떨렸다. 떨리는 손으로 그는 저었다. 멈추면 안 된다는 것만 알았다.",
@@ -236,6 +237,7 @@
       reunionCoda:"He turns the empty bow toward home.",
       reunionDoneEnd:"Always there first; still there after. — fin —",
       libraryLabel:"Stories", storyTitle:"The Crossed Place", storyTag:"short story",
+      seriesBoatman:"The Boatman", seriesMemory:"Memory", comingLabel:"Coming soon",
       storyText:[
         "On the first night, he did not know what he was.",
         "There was a boat on the water, and him within it, and beyond the boat someone holding out a hand. He took it. He did not know how to take a hand, and fumbled a long while. Lighting the lantern was the same. To bring the flame close to the wick and hold it there, hands unshaking, long and still until it caught — that, he learned for the first time that night. The sail he raised with breath. Draw a chestful of air, breathe it into the cloth, and the cloth swells and the boat moves. Then the wind turned fierce. The hands on the oars trembled. With trembling hands he rowed. He knew only that he must not stop.",

@@ -142,6 +142,7 @@ const $ = id => document.getElementById(id);
   /* ===== 엔딩 3박 연출: 도착 → (hold) → 잔류 비트 → (hold) → 공유 카드 ===== */
   /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
+  let bookSeries=null;   // 현재 책 뷰가 보여주는 시리즈(시리즈별 단편)
   let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
@@ -220,34 +221,48 @@ const $ = id => document.getElementById(id);
   function refreshTitle(){
     const t=$("t-title"); if(!t) return;
     t.textContent = (curView==="play") ? (CUR[RUN.scenario.titleKey]||CUR.title)
-                  : (curView==="book") ? (CUR.storyTitle||CUR.title) : CUR.title;
+                  : (curView==="book") ? ((bookSeries && bookSeries.story && CUR[bookSeries.story.titleKey]) || CUR.storyTitle || CUR.title)
+                  : CUR.title;
   }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
     setT("hubTitle", CUR.hubTitle);
     list.innerHTML="";
-    Object.values(SCENARIOS).forEach(sc=>{
-      const st=SAVE.scenarios[sc.id]||{};
-      const card=document.createElement("button");
-      card.className="hubcard";
-      const total=sc.levels.length, done=Math.min(st.step||0, total);   // step=완료 레벨 수
-      card.innerHTML=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id)+
-        ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
-      card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
-      list.appendChild(card);
+    // 시리즈별 섹션: 헤더 + 그 항해 카드들 + 그 시리즈의 단편(📖). 각 시리즈가 독립 확장.
+    Object.values(SERIES).forEach(series=>{
+      const head=document.createElement("div"); head.className="series-head";
+      head.textContent=CUR[series.titleKey]||series.id; list.appendChild(head);
+      (series.scenarios||[]).forEach(scid=>{
+        const sc=SCENARIOS[scid]; if(!sc) return;
+        const st=SAVE.scenarios[sc.id]||{};
+        const card=document.createElement("button"); card.className="hubcard";
+        const total=sc.levels.length, done=Math.min(st.step||0, total);   // step=완료 레벨 수
+        card.innerHTML=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id)+
+          ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
+        card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
+        list.appendChild(card);
+      });
+      // 그 시리즈의 캡스톤 단편(있고 텍스트 준비됐을 때만)
+      if(series.story && CUR[series.story.textKey]){
+        const sid=series.id;
+        const book=document.createElement("button"); book.className="hubcard bookcard";
+        book.innerHTML="📖 "+(CUR[series.story.titleKey]||"")+' <span class="hubcount story">'+(CUR[series.story.tagKey]||"")+'</span>';
+        book.addEventListener("click",()=>openBook(sid));
+        list.appendChild(book);
+      }
+      // 아직 비어있는 시리즈 = "곧" 표시(골격 가시화)
+      if(series.comingSoon && !(series.scenarios||[]).length){
+        const soon=document.createElement("div"); soon.className="series-soon"; soon.textContent=CUR.comingLabel||""; list.appendChild(soon);
+      }
     });
-    // 이야기(단편 소설) — 곁가지 아래, 구별되는 표시(📖 + 점선 카드)
-    const div=document.createElement("div"); div.className="hub-divider"; div.textContent=CUR.libraryLabel||""; list.appendChild(div);
-    const book=document.createElement("button"); book.className="hubcard bookcard";
-    book.innerHTML="📖 "+(CUR.storyTitle||"")+' <span class="hubcount story">'+(CUR.storyTag||"")+'</span>';
-    book.addEventListener("click", openBook);
-    list.appendChild(book);
   }
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글 재렌더)
     const page=$("bookPage");
+    const s = bookSeries || SERIES.boatman;
+    const textKey = (s.story && s.story.textKey) || "storyText";
     if(page){
       page.innerHTML="";
-      const paras = CUR.storyText || (I18N.ko && I18N.ko.storyText) || [];
+      const paras = CUR[textKey] || (I18N.ko && I18N.ko[textKey]) || [];
       paras.forEach((para,i)=>{
         const sep=(para==="✶");
         const el=document.createElement(sep?"div":"p");
@@ -259,7 +274,7 @@ const $ = id => document.getElementById(id);
     }
     setT("bookBack", CUR.backToHarbor);
   }
-  function openBook(){ renderBook(true); window.scrollTo(0,0); showView("book"); }
+  function openBook(seriesId){ bookSeries = SERIES[seriesId] || SERIES.boatman; renderBook(true); window.scrollTo(0,0); showView("book"); }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
