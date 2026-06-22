@@ -1,11 +1,11 @@
   /* ===== i18n 사전 — 새 레벨/트릭은 여기에 키만 추가하면 다국어 자동 적용 ===== */
   const I18N = {
     ko: {
-      title:"밤바다",
+      title:"건너편",
       subtitle:"",
       reset:"↻ 처음부터",
       menu:"목록",
-      gatePrompt:"처음 오셨나요?", gateYes:"네 — 첫 항해를 시작할게요", gateNo:"아니오 — 항구로 갈게요",
+      gatePrompt:"처음 오셨나요?", gateYes:"네 — 처음부터 시작할게요", gateNo:"아니오 — 길목으로 갈게요",
       confirm:"확인",
       placeholder:"암호 입력",
       ok:"맞다. 다음으로.",
@@ -62,7 +62,7 @@
       doneTitle:"항해 🌅",
       doneBody:"닿았다. 등불은 건너편에서 깜빡이고,<br>빈 배는, 왔던 쪽으로 — 혼자 돌아온다.",
       doneEnd:"— 첫 항해 끝 · fin —",
-      sc_tutorial:"첫 항해 — 밤바다", hubTitle:"항구",
+      sc_tutorial:"첫 밤 — 손을 배우다", hubTitle:"길목",
       sc_snow:"첫눈 호수 — 노견을 건너다",
       snow1tag:"첫눈 호수 · 떨고 있는", snow1riddle:"❄️ 첫눈이 내린 호수. 늙은 개가 가만히 떨고 있다.\n곁에 가만히, 오래 손을 대어라.", snow1press:"가만히 — 손을 대본다", snow1reveal:"온기", snow1hint:"힌트: 화면을 *길게* 눌러 온기를 나눠라.", snow_a1:"온기",
       snow2tag:"첫눈 호수 · 잔물결", snow2riddle:"🚣 개가 배에 올랐다. 잔잔한 호수를 건너자.\n좌우로 번갈아, 천천히 노를 저어라.", snow2hint:"힌트: 빛나는 쪽 노를 *좌우 번갈아* 눌러 저어라.",
@@ -243,16 +243,16 @@
       warmPrefix:"온기: ", warmSet:"떨림이 멎었다… 배에 오른다 🐕",
       endStay:"이쪽은 — 그대로 남아, 불을 켜 둔다.",
       shareTitle:"오늘 밤, 누군가가 무사히 건넜습니다.", shareBody:"건너편엔 등불 하나. 다음 사람의 첫 밤이 그 불로 밝습니다.",
-      shareBtn:"🕯️ 등불을 다음 사람에게 →", shareText:"누군가를 건너편까지 — 밤바다를 건너보세요.", backToHarbor:"항구로 돌아가기",
+      shareBtn:"🕯️ 등불을 다음 사람에게 →", shareText:"누군가를 건너편까지 바래다주세요 — 「건너편」.", backToHarbor:"길목으로 돌아가기",
       l1answer:"달빛", l2answer:"등대", l3answer:"수평선", l5answer:"북극성",
       answers:["달빛","등대","수평선","북극성"]
     },
     en: {
-      title:"Night Sea",
+      title:"Yonderkeep",
       subtitle:"",
       reset:"↻ Restart",
       menu:"Menu",
-      gatePrompt:"First time here?", gateYes:"Yes — start the voyage", gateNo:"No — take me to the harbor",
+      gatePrompt:"First time here?", gateYes:"Yes — begin from the start", gateNo:"No — take me to the crossroads",
       confirm:"Enter",
       placeholder:"passcode",
       ok:"Correct. Onward.",
@@ -309,7 +309,7 @@
       doneTitle:"Voyage 🌅",
       doneBody:"It reached. The lantern blinks on the far shore,<br>and the empty boat turns home — alone.",
       doneEnd:"— end of the first voyage · fin —",
-      sc_tutorial:"First Voyage — Night Sea", hubTitle:"The Harbor",
+      sc_tutorial:"The First Night", hubTitle:"Crossroads",
       sc_snow:"Snow Lake — ferry the old dog",
       snow1tag:"SNOW LAKE · the shivering one", snow1riddle:"❄️ A lake under first snow. An old dog shivers, still.\nRest your hand beside it — long and quiet.", snow1press:"rest — your hand", snow1reveal:"warmth", snow1hint:"Hint: *press and hold* to share warmth.", snow_a1:"warmth",
       snow2tag:"SNOW LAKE · still ripples", snow2riddle:"🚣 The dog has boarded. Cross the still lake.\nPull the oars, left and right in turn.", snow2hint:"Hint: tap the *glowing* oar, alternating.",
@@ -490,7 +490,7 @@
       warmPrefix:"warmth: ", warmSet:"The shivering stops… it climbs aboard 🐕",
       endStay:"This side — someone stays, keeps the light.",
       shareTitle:"Tonight, someone made it across.", shareBody:"On the far side, one lantern. It will light the next person's first night.",
-      shareBtn:"🕯️ Pass the lantern on →", shareText:"Carry someone across the night sea.", backToHarbor:"Back to the harbor",
+      shareBtn:"🕯️ Pass the lantern on →", shareText:"See someone all the way to the far side — Yonderkeep.", backToHarbor:"Back to the crossroads",
       l1answer:"moonlight", l2answer:"lighthouse", l3answer:"horizon", l5answer:"polaris",
       answers:["moonlight","lighthouse","horizon","polaris"]
     }
