@@ -145,9 +145,11 @@ const $ = id => document.getElementById(id);
   /* ===== 엔딩 3박 연출: 도착 → (hold) → 잔류 비트 → (hold) → 공유 카드 ===== */
   /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
-  let bookSeries=null;   // 현재 책 뷰가 보여주는 시리즈(시리즈별 단편)
+  let bookSeries=null;   // 현재 책 뷰의 시리즈
+  let bookStory=null;    // 현재 책 뷰가 보여주는 단편(시리즈당 1+개)
   let fromStory=false;   // 곁가지 매듭을 소설(book)에서 실행했는가 → 엔딩 카드가 이야기로 복귀
   let lastKnotScid=null; // 직전 실행한 매듭 시나리오 id(복귀 시 그 자리로 스크롤)
+  let lastKnotStory=null;// 그 매듭이 속한 단편(복귀 시 그 책으로)
   let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
@@ -159,7 +161,7 @@ const $ = id => document.getElementById(id);
     setT("share-title", mem?CUR.memShareTitle:CUR.shareTitle);
     setT("share-body",  mem?CUR.memShareBody :CUR.shareBody);
     const sb=$("shareBtn"); if(sb){ sb.textContent=CUR.shareBtn; sb.style.display = mem?"none":""; }
-    setT("backHarborBtn", (mem && fromStory)?CUR.memBackToStory:CUR.backToHarbor);   // 이야기서 왔으면 '이야기로', 허브서 왔으면 '항구로'
+    setT("backHarborBtn", fromStory?CUR.backToStory:CUR.backToHarbor);   // 매듭(소설서 옴)=이야기로, 그 외=항구로
   }
   function seqClearTimer(){ if(seqTimer){ clearTimeout(seqTimer); seqTimer=null; } }
   function resetEnding(){
@@ -245,7 +247,7 @@ const $ = id => document.getElementById(id);
   function refreshTitle(){
     const t=$("t-title"); if(!t) return;
     t.textContent = (curView==="play") ? (CUR[RUN.scenario.titleKey]||CUR.title)
-                  : (curView==="book") ? ((bookSeries && bookSeries.story && CUR[bookSeries.story.titleKey]) || CUR.storyTitle || CUR.title)
+                  : (curView==="book") ? ((bookStory && CUR[bookStory.titleKey]) || CUR.title)
                   : CUR.title;
   }
   function knotCount(scid){   // 매듭(단일 레벨) 진행 — 항해 카드와 동일 (done/total)
@@ -271,56 +273,48 @@ const $ = id => document.getElementById(id);
         card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
         list.appendChild(card);
       });
-      // 그 시리즈의 단편(있고 텍스트 준비됐을 때만)
-      if(series.story && CUR[series.story.textKey]){
-        const sid=series.id;
-        const keys = series.knots ? Object.keys(series.knots) : [];
-        const knotsDone = keys.filter(k=>{ const st=SAVE.scenarios[series.knots[k]]; return st && st.cleared; }).length;
+      // 그 시리즈의 단편들(각 📖 + 하위 매듭 들여쓰기). 소설-먼저 = 항해는 매듭으로만.
+      (series.stories||[]).forEach((story, si)=>{
+        if(!CUR[story.textKey]) return;
+        const keys = story.knots ? Object.keys(story.knots) : [];
+        const knotsDone = keys.filter(k=>{ const st=SAVE.scenarios[story.knots[k].scid]; return st && st.cleared; }).length;
         const book=document.createElement("button"); book.className="hubcard bookcard";
-        book.innerHTML="📖 "+(CUR[series.story.titleKey]||"")+' <span class="hubcount story">'+(CUR[series.story.tagKey]||"")+'</span>'+
+        book.innerHTML="📖 "+(CUR[story.titleKey]||"")+' <span class="hubcount story">'+(CUR[story.tagKey]||"")+'</span>'+
           (keys.length?' <span class="hubcount'+(knotsDone>=keys.length?' full':'')+'">('+knotsDone+'/'+keys.length+')</span>':'');
-        book.addEventListener("click",()=>openBook(sid));
+        book.addEventListener("click",()=>openBook(series.id, si));
         list.appendChild(book);
-        // 소설 중심 시리즈: 단편 하위로 매듭 트릭 들여쓰기 표시(구조 가시화 + 직접 점프 + 완료/개수)
+        // 단편 하위로 매듭 트릭 들여쓰기(구조 가시화 + 직접 점프 + 완료/개수)
         keys.forEach(key=>{
-          const scid=series.knots[key], sc=SCENARIOS[scid]; if(!sc) return;
-          const c=knotCount(scid);
+          const k=story.knots[key], sc=SCENARIOS[k.scid]; if(!sc) return;
+          const c=knotCount(k.scid);
           const sub=document.createElement("button"); sub.className="hubcard knotsub";
-          const label=key==="erase"?CUR.knotEraseLabel:CUR.knotRoadLabel;
-          sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+label+
+          sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+(CUR[k.label]||key)+
             ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
-          sub.addEventListener("click",()=>openKnot(scid));   // 허브서 실행해도 끝나면 소설로 복귀
+          sub.addEventListener("click",()=>openKnot(k.scid, story));   // 허브서 실행해도 끝나면 소설로 복귀
           list.appendChild(sub);
         });
-      }
-      // 아직 비어있는 시리즈 = "곧" 표시(골격 가시화)
-      if(series.comingSoon && !(series.scenarios||[]).length){
-        const soon=document.createElement("div"); soon.className="series-soon"; soon.textContent=CUR.comingLabel||""; list.appendChild(soon);
-      }
+      });
     });
   }
-  function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글 재렌더)
+  function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
-    const s = bookSeries || SERIES.boatman;
-    const textKey = (s.story && s.story.textKey) || "storyText";
-    if(page){
+    const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
+    if(page && story){
       page.innerHTML="";
-      const paras = CUR[textKey] || (I18N.ko && I18N.ko[textKey]) || [];
-      const knotM = s.knots || {};
+      const paras = CUR[story.textKey] || (I18N.ko && I18N.ko[story.textKey]) || [];
+      const knotM = story.knots || {};
       paras.forEach((para,i)=>{
         let el;
         const km = (typeof para==="string") && para.match(/^⟦KNOT:(\w+)⟧$/);
-        if(km){
+        if(km && knotM[km[1]]){
           // 인라인 매듭 — 소설 본문서 트릭 실행 버튼
-          const key=km[1], scid=knotM[key];
-          el=document.createElement("button"); el.className="knot-btn";
-          if(scid) el.id="knot-"+scid;   // 복귀 시 이 자리로 스크롤
-          const label = key==="erase" ? CUR.knotEraseLabel : CUR.knotRoadLabel;
-          const c = scid ? knotCount(scid) : {done:0,total:1,cleared:false};
-          el.innerHTML = (c.cleared?"✓ ":"▶ ")+(label||key)+
+          const k=knotM[km[1]], scid=k.scid;
+          el=document.createElement("button"); el.className="knot-btn"; el.id="knot-"+scid;
+          const c = knotCount(scid);
+          el.innerHTML = (c.cleared?"✓ ":"▶ ")+(CUR[k.label]||km[1])+
             ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
           if(c.cleared) el.classList.add("done");
-          if(scid) el.addEventListener("click",()=>openKnot(scid));
+          el.addEventListener("click",()=>openKnot(scid, story));
         } else {
           const sep=(para==="✶");
           el=document.createElement(sep?"div":"p");
@@ -333,15 +327,21 @@ const $ = id => document.getElementById(id);
     }
     setT("bookBack", CUR.backToHarbor);
   }
-  function openBook(seriesId){ bookSeries = SERIES[seriesId] || SERIES.boatman; renderBook(true); window.scrollTo(0,0); showView("book"); }
+  function openBook(seriesId, storyIdx){
+    bookSeries = SERIES[seriesId] || SERIES.boatman;
+    bookStory = (bookSeries.stories||[])[storyIdx||0] || (bookSeries.stories||[])[0];
+    renderBook(true); window.scrollTo(0,0); showView("book");
+  }
   /* 매듭(곁가지) 실행 — 완료된 매듭은 엔딩카드부터(트릭 강제반복 X), 미완은 트릭부터.
-     허브에서 들어오든 소설에서 들어오든 *끝나면 늘 소설의 그 자리로* 복귀. */
-  function openKnot(scid){ if(!SCENARIOS[scid]) return; lastKnotScid=scid;
+     허브/소설 어디서 들어오든 *끝나면 늘 그 단편의 그 자리로* 복귀. */
+  function openKnot(scid, story){ if(!SCENARIOS[scid]) return;
+    lastKnotScid=scid; lastKnotStory = story || bookStory;
     const done = SAVE.scenarios[scid] && SAVE.scenarios[scid].cleared;
     startScenario(scid, !done); fromStory=true; window.scrollTo(0,0); showView("play"); }
-  /* 매듭 끝나고 소설로 — 즉시 재렌더(촤르륵 X) 후 *그 매듭 자리*로 스크롤(처음으로 안 튐) */
+  /* 매듭 끝나고 소설로 — 그 단편 즉시 재렌더 후 *그 매듭 자리*로 스크롤(처음으로 안 튐) */
   function returnToStory(){
-    bookSeries = SERIES.memory; renderBook(false); showView("book");
+    if(lastKnotStory) bookStory=lastKnotStory;
+    renderBook(false); showView("book");
     const el = lastKnotScid && $("knot-"+lastKnotScid);
     if(el){ requestAnimationFrame(()=>{ try{ el.scrollIntoView({block:"center"}); }catch(e){ window.scrollTo(0,0); } }); }
     else window.scrollTo(0,0);
@@ -394,7 +394,7 @@ const $ = id => document.getElementById(id);
     if($("hub").style.display!=="none"){ showView("play"); }   // 이미 열림 → 닫고 플레이로(토글)
     else { buildHub(); showView("hub"); }
   });
-  $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); showView("play"); });
+  $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); openBook("boatman",0); });   // 「손을 배우는 밤」부터(튜토리얼 매듭 포함)
   $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); buildHub(); showView("hub"); });
   { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
   $("resetBtn").addEventListener("click",()=>{

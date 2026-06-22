@@ -99,7 +99,11 @@
       // ── 기억 시리즈 「그려둔 길」 (소설 중심) ──
       memTitle:"그려둔 길", memTag:"단편 소설",
       knotRoadLabel:"✍️ 그 한 줄을, 손으로", knotEraseLabel:"🌫 그 길을, 놓아주다",
-      memShareTitle:"지도는 남는다", memShareBody:"그가 그려둔 길을, 네가 간직한다.", memBackToStory:"이야기로 돌아가기",
+      memShareTitle:"지도는 남는다", memShareBody:"그가 그려둔 길을, 네가 간직한다.",
+      backToStory:"이야기로 돌아가기", memBackToStory:"이야기로 돌아가기",
+      // 뱃사공 2단편 + 매듭 라벨
+      learnTitle:"손을 배우는 밤", learnTag:"단편 · 첫 밤", crossTitle:"건너간 자리", crossTag:"단편 소설",
+      knotTutorialLabel:"🕯 손으로 배우는 밤", knotSnowLabel:"🐕 곁에, 가만히", knotDawnLabel:"🚣 둘의 박자로", knotLanternLabel:"🔥 떼지 않고, 천천히",
       memStory:[
         "그는 길을 재는 사람이었다.",
         "마을과 마을, 강의 이쪽과 저쪽, 떠난 자리와 돌아올 자리 — 그 사이를 그는 걸음으로 재고, 줄로 재고, 끝내 종이 위에 옮겼다.",
@@ -125,6 +129,8 @@
         "그는 떠난 이에게 건넨 지도와 똑같은 한 장을 제 손으로 다시 그려, 깊은 데 두었다. 누구에게 가는 길인지는 말하지 않았다. 곁의 사람은 묻지 않았고, 다만 그 한 장이 어디 있는지를 가만히 외워 두었다.",
         "✶",
         "그는 늙었다. 잰 거리들이 몸 안에서 무거워졌다. 어느 날 그는, 잊기를 택했다. 잊는 것이 평온이었으므로.",
+        "평온이 먼저 왔고, 다음엔 더듬음이 왔다. 끝내 그는, 가장 오래 그린 그 길이 누구에게로 가는 길이었는지조차 찾지 못했다. 줄을 풀면, 줄 끝엔 아무것도 매여 있지 않았다.",
+        "그는 곁의 사람에게 말했다. 「편해진다는 건… 잊는다는 거지. 괜찮네, 그려도.」 그러고는 오래 만에 편안히, 빈 종이처럼 웃었다.",
         "⟦KNOT:erase⟧",
         "✶",
         "곁의 사람은 깊은 데 둔 그 한 장을 꺼냈다. 길에서 비켜난 빈자리에, 작은 글씨 한 줄이 그대로 있었다. 「가다가… 길 막히면, 여기로 와.」",
@@ -132,6 +138,45 @@
         "곁의 사람은 지도를 접어 제 품에 넣었다. 떠난 이가 그랬던 것처럼. 그러나 이번엔 떠나기 위해서가 아니라, 남기 위해서였다.",
         "「잊혀도 — 지도는 남는다. 그가 잊은 길을, 이제 내가 간직한다.」",
         "언젠가 그 길이 다시 누군가를 부르는 날이 오면, 그가 끝내 걷지 못한 그 길을 대신 걸어 줄 사람이 여기 있었다. 길의 시작점에, 늘 그랬듯, 먼저 와서."
+      ],
+      // ── 뱃사공 단편 A 「손을 배우는 밤」(튜토리얼 이야기) ──
+      learnStory:[
+        "첫 밤, 그는 자기가 무엇인지 몰랐다.",
+        "물 위에 배가 있었고, 배 안에 그가 있었고, 배 밖으로 누군가 손을 내밀고 있었다. 그 손을 어떻게 해야 하는지 그는 몰랐다. 등불을 어떻게 켜는지, 돛을 어떻게 올리는지, 노를 어떻게 젓는지 — 아무것도 몰랐다. 다만 오늘 밤, 그 모든 것을 처음으로 배워야 한다는 것만 알았다.",
+        "가르쳐 줄 사람은 없었다. 잡아 줄 손도 없었다. 그는 제 손으로, 하나씩, 더듬어 익혀야 했다.",
+        "⟦KNOT:tutorial⟧",
+        "건너편에 닿았을 때, 손을 내밀었던 이는 마른 땅으로 올라섰다. 돌아보았는지 아닌지, 그는 보지 못했다. 다만 빈 배에 혼자 남아, 물 위에 떠서, 오래 흔들렸다.",
+        "그때 그는 정했다. 늘 먼저 와 있겠다고. 떠난 뒤에도 남아 있겠다고. 누구의 것도 아닌 그 결심이, 그날 밤 그의 처음이자 전부였다."
+      ],
+      // ── 뱃사공 단편 B 「건너간 자리」(항해들) — 코다 본문 포함 ──
+      crossStory:[
+        "첫눈이 내리던 호수에서, 늙은 개 한 마리가 떨고 있었다.",
+        "오래 누군가의 곁에 있던 짐승의 몸이었다. 떨림이 깊었다. 그는 다가가 곁에 앉았다. 말은 하지 않았다. 이제 그가 할 수 있는 일은 하나뿐이었다 — 곁에, 가만히, 오래.",
+        "⟦KNOT:snow⟧",
+        "건너편에 닿자 개는 마른 땅을 밟고 몇 걸음 걸어가더니, 한 번, 돌아보았다. 떠나는 눈이 아니었다. 곁에 있던 시간을 아는 눈, 오래 누군가의 곁에서 살아본 눈이었다. 그 눈이 그를 보았다.",
+        "\"잘 가. 이쪽은 내가 지킬게.\"",
+        "개는 다시 앞을 보고 걸어갔다. 그가 배로 돌아왔을 때, 배 바닥에 목줄 하나가 놓여 있었다. 풀려 떨어진 것이 아니라, 가지런히 — 그를 위해 둔 것이었다. 곁을 지킨다는 것이 무엇인지, 그 한 줌이 그의 안에 자리 잡았다.",
+        "✶",
+        "새벽 강에는 안개가 걷히고 있었다.",
+        "아이 하나가 멀리 이사를 가는 길이었다. 보따리도 없이, 손이 가벼운 채였다. 아이가 노에 손을 얹었다. 혼자서는 건널 수 없는 물이었다. 둘이 박자를 맞춰야 했다.",
+        "⟦KNOT:dawn⟧",
+        "마른 땅에 닿자 아이는 폴짝 뛰어내렸다. 그러더니 뒤도 돌아보지 않고, 한 번도 돌아보지 않고, 풀밭을 가로질러 앞으로 달려갔다. 돌아볼 것이 없다는 건, 돌아볼 마음이 들지 않을 만큼 좋은 곳이 저 앞에 있다는 뜻이었다. 그는 그 등을, 작아질 때까지 바라보았다.",
+        "배 안에는 종이배 하나가 남아 있었다. 아이가 접은 것이었다. 서툴게, 모서리가 맞지 않게. 가만 보니 노를 쥔 모양으로, 등을 살짝 굽힌 모양으로 — 그를 닮아 있었다. 두고 간 것이 아니라, 만들어서, 남긴 것이었다.",
+        "✶",
+        "등불 항구에서는, 한 사람의 기억이 꺼져가고 있었다.",
+        "그는 작은 불씨를 손에 받았다. 그것을 항구 끝, 비어 있는 등불까지 옮겨야 했다. 손을 한 번이라도 들면 꺼질 불이었다. 떼지 않고, 아주 천천히.",
+        "⟦KNOT:lantern⟧",
+        "건너편에서 그 사람이 그를 보았다. 보았으나, 알아보지는 못했다. 이미 너무 많은 것을 잊은 뒤였다. 함께 건넌 일도, 불씨를 옮긴 일도, 그가 누구인지도. 그 눈에는 흐릿한 평온만 있었다. 잊은 자에게는 그편이 가볍다는 것을, 그는 알았다.",
+        "\"잊혀도, 여기 한 칸은 비워둘게.\"",
+        "그는 빈 등불에 불씨를 옮겨 붙였다. 등불은 이름이 없었다. 누구의 것이라 적혀 있지 않았다. 다만 켜졌다. 채우는 것과 똑같은 무게로, 비워두는 일의 한 줌이 그의 안에 들어왔다.",
+        "✶",
+        "마지막 밤의 배에는, 누군가를 만나러 가는 이가 탔다. 먼저 건너간 사람이, 건너편에서 아주 오래 기다린 사람이었다. 배에 탄 이는 조급하지 않았다. 다만 자꾸 건너편을 바라보았고, 그 눈에 두려움이 없었다. 물길은 더없이 잔잔하여, 노를 젓는 일이 마치 배웅이 아니라 마중 같았다.",
+        "배가 닿자, 두 개의 작은 불빛이 마른 땅 위에서 서로에게로 다가갔다. 천천히, 사이의 거리를 좁히며. 그리고 하나가 되었다. 더 밝아지지는 않았다. 다만 더 따뜻해졌다.",
+        "그는 노를 거두고, 그 광경이 온전히 끝날 때까지 바라보았다. 한 칸 비워두었던 자리는, 그가 지켜온 자리는, 그를 기다리던 자리였다. 그리고 조용히 고개를 끄덕였다.",
+        "✶",
+        "빈 배로 돌아오는 길, 멀리 건너편에서 작은 불빛 하나가 켜지는 것 같기도 했다. 아주 오래전부터 거기 있었던 것처럼.",
+        "그는 노를 쥐었다. 그리고 기다렸다. 언젠가 누군가 그를 태우러 올 그 밤을 — 그날이면 그도 들을 것이었다. \"잘 가, 이쪽은 내가 지킬게\", 그 말을, 이번에는 그가.",
+        "물은 잔잔했다. 등불은 꺼지지 않았다."
       ],
       // 작별 매듭(길 그리기)
       sc_road:"작별 · 그 한 줄",
@@ -301,7 +346,11 @@
       // ── Memory series: "The Drawn Road" (novel-first) ──
       memTitle:"The Drawn Road", memTag:"short story",
       knotRoadLabel:"✍️ That one line — by hand", knotEraseLabel:"🌫 Let the road go",
-      memShareTitle:"The map remains", memShareBody:"The road he drew, you keep.", memBackToStory:"Back to the story",
+      memShareTitle:"The map remains", memShareBody:"The road he drew, you keep.",
+      backToStory:"Back to the story", memBackToStory:"Back to the story",
+      // Boatman two short stories + knot labels
+      learnTitle:"The Night of Learning Hands", learnTag:"short · first night", crossTitle:"The Crossed Place", crossTag:"short story",
+      knotTutorialLabel:"🕯 The night, learned by hand", knotSnowLabel:"🐕 Beside, and still", knotDawnLabel:"🚣 To the two of us, in time", knotLanternLabel:"🔥 Without lifting, slowly",
       memStory:[
         "He was a man who measured roads.",
         "Between village and village, between this bank and the far one, between the place left behind and the place to return to — he measured with his steps, with his cord, and at last he set it down on paper.",
@@ -327,6 +376,8 @@
         "He drew again, with his own hand, a map exactly like the one he had handed over, and set it deep away. He did not say whom its road was for. The one beside him did not ask — only quietly memorized where that single sheet was kept.",
         "✶",
         "He grew old. The distances he had measured grew heavy inside him. One day, he chose to forget. For forgetting was peace.",
+        "Peace came first, then the groping. In the end he could no longer find even whom that longest-drawn road was for. Unspool the cord, and at its end nothing was tied.",
+        "He said to the one beside him, \"To be at peace… is to forget. It's all right. Draw it.\" And then, for the first time in long, he smiled — blank as fresh paper.",
         "⟦KNOT:erase⟧",
         "✶",
         "The one beside him took out that single sheet set deep away. In the empty spot off the road, a single line in small letters was still there. \"If the road ahead is blocked… come back here.\"",
@@ -334,6 +385,45 @@
         "The one beside him folded the map into their own coat. As that person once had. But this time not to leave — to remain.",
         "\"Forgotten — yet the map remains. The road he forgot, now I keep.\"",
         "Someday, when that road calls someone again, there would be one here to walk in his place the road he never could. At the starting point, as ever, come first."
+      ],
+      // ── Boatman story A "The Night of Learning Hands" (tutorial) ──
+      learnStory:[
+        "On the first night, he did not know what he was.",
+        "There was a boat on the water, and he was in the boat, and beyond the boat someone was holding out a hand. What to do with that hand, he did not know. How to light the lamp, how to raise the sail, how to row — he knew none of it. He knew only that tonight, for the first time, he had to learn it all.",
+        "There was no one to teach him. No hand to hold his. With his own hands, one by one, he had to grope and learn.",
+        "⟦KNOT:tutorial⟧",
+        "When he reached the far side, the one who had held out a hand stepped onto dry land. Whether they looked back, he did not see. He only stayed in the empty boat, afloat, swaying a long while.",
+        "That night he decided. To always come first. To remain even after they had gone. That resolve, belonging to no one, was his first thing and his everything that night."
+      ],
+      // ── Boatman story B "The Crossed Place" (voyages) — codas kept in the body ──
+      crossStory:[
+        "On a lake where first snow was falling, an old dog stood trembling.",
+        "Its body was that of a creature that had long been at someone's side. The trembling was deep. He went near and sat beside it. He said nothing. There was only one thing he could do now — to be beside it, still, for a long while.",
+        "⟦KNOT:snow⟧",
+        "Reaching the far side, the dog stepped onto dry land, walked a few paces, and looked back, once. Not the look of one leaving. The look of one who knows the time spent beside another, eyes that had lived long at someone's side. Those eyes saw him.",
+        "\"Go well. This side, I'll keep.\"",
+        "The dog faced forward and walked on. When he returned to the boat, a collar lay on its floor. Not slipped loose, but set down neatly — left for him. What it is to keep watch beside someone, that one handful settled inside him.",
+        "✶",
+        "On the dawn river the mist was lifting.",
+        "A child was on the way to move far away. No bundle, hands light. The child laid a hand on the oar. It was water no one could cross alone. The two had to keep time together.",
+        "⟦KNOT:dawn⟧",
+        "Reaching dry land the child leapt off, and then, without looking back, not once looking back, ran ahead across the grass. To have nothing to look back on means there is something good enough ahead that the wish to look back never comes. He watched that small back until it grew smaller.",
+        "In the boat a paper boat remained. The child had folded it — clumsily, corners unmatched. Looking closer: the shape of a hand at the oar, of a back slightly bent — it resembled him. Not left behind, but made, and left.",
+        "✶",
+        "At the lantern harbor, one person's memory was going out.",
+        "He received a small ember in his hand. He had to carry it to an empty lamp at the harbor's end. Lift his hand even once and it would die. Without lifting, ever so slowly.",
+        "⟦KNOT:lantern⟧",
+        "From the far side that person saw him. Saw, but did not know him. Too much had already been forgotten. The crossing together, the carrying of the ember, who he was. In those eyes was only a dim peace. To one who has forgotten, he knew, that is the lighter way.",
+        "\"Even forgotten — I'll keep one space here, empty.\"",
+        "He set the ember to the empty lamp. The lamp had no name. It was not written whose it was. Yet it was lit. With the same weight as filling, the one handful of keeping-a-space-empty entered him.",
+        "✶",
+        "On the boat of the last night rode one going to meet someone. There was one who had crossed first, who had waited on the far side a very long time. The rider was not impatient — only kept looking to the far side, and in those eyes was no fear. The water was so still that rowing felt less like a sending-off than a going-to-meet.",
+        "When the boat touched, two small lights drew toward each other over the dry land. Slowly, closing the distance between them. And they became one. They did not grow brighter. Only warmer.",
+        "He drew in the oar and watched until the sight was wholly done. The one space he had kept empty, the place he had guarded, was the place that had been waiting for him. And he quietly nodded.",
+        "✶",
+        "On the way back in the empty boat, far off on the other side, a small light seemed almost to come on. As if it had been there from long, long ago.",
+        "He took up the oar. And he waited. For the night, someday, when someone would come to carry him — that night, he too would hear it. \"Go well, this side I'll keep,\" the words, this time, from him.",
+        "The water was still. The lamp did not go out."
       ],
       // Farewell knot (drawing the road)
       sc_road:"Farewell · that one line",

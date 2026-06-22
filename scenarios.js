@@ -27,7 +27,7 @@ const SCENARIOS = {
       { sec:"lvWarm", trick:"warm", text:{ tag:"snow1tag", riddle:"snow1riddle", hint:"snow1hint" } },
       { sec:"lv7",    trick:"row",  text:{ tag:"snow2tag", riddle:"snow2riddle", hint:"snow2hint" } },
     ],
-    ending: { title:"snowDoneTitle", body:"snowDoneBody", end:"snowDoneEnd", coda:"snowCoda" },
+    ending: { title:"snowDoneTitle", body:"snowDoneBody", end:"snowDoneEnd" },   // 코다(목줄)는 소설 본문 몫
   },
   /* 새벽 강 — 이사 가는 아이. 신규 트릭 '나란히 젓기'(두 노 동시). 돌아봄의 반전 + 종이배 코다. */
   dawn_river: {
@@ -37,7 +37,7 @@ const SCENARIOS = {
       { sec:"lvFold",   trick:"fold",   text:{ tag:"foldTag", riddle:"foldRiddle", hint:"foldHint" } },
       { sec:"lvRowPar", trick:"rowpar", text:{ tag:"dawnTag", riddle:"dawnRiddle", hint:"dawnHint" } },
     ],
-    ending: { title:"dawnDoneTitle", body:"dawnDoneBody", end:"dawnDoneEnd", coda:"dawnCoda" },
+    ending: { title:"dawnDoneTitle", body:"dawnDoneBody", end:"dawnDoneEnd" },   // 코다(종이배)는 소설 본문 몫
   },
   /* 등불 항구 — 잊혀가는 기억. 신규 트릭 '불씨 옮기기'(손 떼지 않고 천천히). 시선=못 알아봄, 코다=이름 없는 등불. */
   lantern_harbor: {
@@ -46,7 +46,7 @@ const SCENARIOS = {
     levels: [
       { sec:"lvEmber", trick:"ember", text:{ tag:"emberTag", riddle:"emberRiddle", hint:"emberHint" } },
     ],
-    ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd", coda:"lanternCoda" },
+    ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd" },   // 코다(이름 없는 등불)는 소설 본문 몫
   },
   /* 기억 시리즈 「그려둔 길」의 *인라인 매듭* 2개 — 허브 카드 아님. 소설(book) 본문의
      ⟦KNOT:road⟧·⟦KNOT:erase⟧ 지점에서 실행 → 엔딩 카드(측량가 버전) → 이야기로 복귀.
@@ -56,14 +56,14 @@ const SCENARIOS = {
     levels: [
       { sec:"lvRoad", trick:"road", text:{ tag:"roadTag", riddle:"roadRiddle", hint:"roadHint", reveal:"roadReveal" } },
     ],
-    ending: { title:"roadDoneTitle", body:"roadDoneBody", end:"roadDoneEnd", coda:"roadCoda", stay:"roadStay" },
+    ending: { title:"roadDoneTitle", body:"roadDoneBody", end:"roadDoneEnd", stay:"roadStay" },   // 코다는 소설 본문 몫
   },
   erase_knot: {                // 망각 매듭 — 되짚어 지우기(끝→시작점). 느린 망각 seqKey + 잔류.
     id: "erase_knot", titleKey: "sc_erase", series: "memory", knot: true,
     levels: [
       { sec:"lvErase", trick:"erase", text:{ tag:"eraseTag", riddle:"eraseRiddle", hint:"eraseHint", reveal:"eraseReveal" } },
     ],
-    ending: { title:"eraseDoneTitle", body:"eraseDoneBody", end:"eraseDoneEnd", coda:"eraseCoda", stay:"eraseStay", seqKey:"eraseSeq" },
+    ending: { title:"eraseDoneTitle", body:"eraseDoneBody", end:"eraseDoneEnd", stay:"eraseStay", seqKey:"eraseSeq" },   // 코다는 소설 본문 몫
   },
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
@@ -72,20 +72,32 @@ const SCENARIOS = {
 /* ===== 스토리 시리즈 =====
    각 시리즈 = 독립적으로 확장되는 연속 사가(자기 항해들 + 캡스톤 단편). 허브가 시리즈별 섹션으로 렌더.
    새 시리즈 추가 = 여기 객체 하나 + (있으면) levels.js에 그 시리즈 storyText/제목 키. */
+/* 각 시리즈 = 소설-먼저(novelFirst): stories 배열의 각 단편이 📖 입구, 본문 ⟦KNOT:key⟧에서
+   매듭(트릭) 실행 후 그 자리로 복귀. knots: key → { scid 시나리오 id, label 버튼 i18n 키 }. */
 const SERIES = {
   boatman: {
     id: "boatman",
     titleKey: "seriesBoatman",
-    scenarios: ["tutorial", "snow_lake", "dawn_river", "lantern_harbor"],
-    story: { titleKey: "storyTitle", tagKey: "storyTag", textKey: "storyText" },   // 「건너간 자리」
+    scenarios: [],          // 항해는 소설 안 매듭으로 — 허브 항해 카드 없음
+    novelFirst: true,
+    stories: [
+      { titleKey:"learnTitle", tagKey:"learnTag", textKey:"learnStory",
+        knots: { tutorial:{ scid:"tutorial", label:"knotTutorialLabel" } } },
+      { titleKey:"crossTitle", tagKey:"crossTag", textKey:"crossStory",
+        knots: { snow:{ scid:"snow_lake", label:"knotSnowLabel" },
+                 dawn:{ scid:"dawn_river", label:"knotDawnLabel" },
+                 lantern:{ scid:"lantern_harbor", label:"knotLanternLabel" } } },
+    ],
   },
   memory: {
     id: "memory",
     titleKey: "seriesMemory",
-    scenarios: [],                          // 곁가지 카드 없음 — 소설 안에서 인라인 매듭으로 실행
-    story: { titleKey: "memTitle", tagKey: "memTag", textKey: "memStory" },   // 「그려둔 길」
-    novelFirst: true,                       // 허브에서 📖 소설이 *입구*
-    knots: { road: "road_knot", erase: "erase_knot" },   // ⟦KNOT:key⟧ → 시나리오 id
-    comingSoon: false,
+    scenarios: [],
+    novelFirst: true,
+    stories: [
+      { titleKey:"memTitle", tagKey:"memTag", textKey:"memStory",
+        knots: { road:{ scid:"road_knot", label:"knotRoadLabel" },
+                 erase:{ scid:"erase_knot", label:"knotEraseLabel" } } },
+    ],
   },
 };
