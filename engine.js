@@ -289,7 +289,7 @@ const $ = id => document.getElementById(id);
           const label=key==="erase"?CUR.knotEraseLabel:CUR.knotRoadLabel;
           sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+label+
             ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
-          sub.addEventListener("click",()=>openKnot(scid, true));   // 허브서 실행 → 항구로 복귀
+          sub.addEventListener("click",()=>openKnot(scid));   // 허브서 실행해도 끝나면 소설로 복귀
           list.appendChild(sub);
         });
       }
@@ -334,8 +334,11 @@ const $ = id => document.getElementById(id);
     setT("bookBack", CUR.backToHarbor);
   }
   function openBook(seriesId){ bookSeries = SERIES[seriesId] || SERIES.boatman; renderBook(true); window.scrollTo(0,0); showView("book"); }
-  /* 소설 안에서 매듭(곁가지) 실행 — 항상 트릭부터(fresh). keepHub=true(허브서 실행)면 항구로, 아니면 이야기로 복귀 */
-  function openKnot(scid, keepHub){ if(!SCENARIOS[scid]) return; lastKnotScid=scid; startScenario(scid, true); fromStory=!keepHub; window.scrollTo(0,0); showView("play"); }
+  /* 매듭(곁가지) 실행 — 완료된 매듭은 엔딩카드부터(트릭 강제반복 X), 미완은 트릭부터.
+     허브에서 들어오든 소설에서 들어오든 *끝나면 늘 소설의 그 자리로* 복귀. */
+  function openKnot(scid){ if(!SCENARIOS[scid]) return; lastKnotScid=scid;
+    const done = SAVE.scenarios[scid] && SAVE.scenarios[scid].cleared;
+    startScenario(scid, !done); fromStory=true; window.scrollTo(0,0); showView("play"); }
   /* 매듭 끝나고 소설로 — 즉시 재렌더(촤르륵 X) 후 *그 매듭 자리*로 스크롤(처음으로 안 튐) */
   function returnToStory(){
     bookSeries = SERIES.memory; renderBook(false); showView("book");
