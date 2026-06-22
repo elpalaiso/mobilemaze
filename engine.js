@@ -63,6 +63,11 @@ const $ = id => document.getElementById(id);
 
   /* ===== 정답 확인 (정답은 현재 언어 사전에서) ===== */
   const norm = s => (s||"").trim().toLowerCase();
+  function cyrb53(str, seed=0){ let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;
+    for(let i=0,c;i<str.length;i++){c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}
+    h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+    h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+    return 4294967296*(2097151&h2)+(h1>>>0); }
   /* 햅틱(Vibration API) — 미지원/데스크탑은 자동 무시. 작은도착=짧게, 막완료=패턴.
      동시에 화면 글로우로 *시각 미러*(iOS 등 햅틱 미지원 환경 커버). */
   function haptic(p){
@@ -76,14 +81,17 @@ const $ = id => document.getElementById(id);
   }
   function check(inId, msgId){
     const lvl = RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
-    const target = lvl && lvl.ans ? CUR[lvl.ans] : "";   // 정답 = 현재 시나리오 레벨의 매니페스트 키
     const v = norm($(inId).value);
     const m = $(msgId);
-    if(target && v === norm(target)){
+    const lang = document.documentElement.lang || "ko";
+    const h = lvl && lvl.ansHash ? (typeof lvl.ansHash==="object" ? (lvl.ansHash[lang] || lvl.ansHash.ko || lvl.ansHash.en) : lvl.ansHash) : null;
+    const target = (!h && lvl && lvl.ans) ? CUR[lvl.ans] : "";   // 정답 = 현재 시나리오 레벨의 매니페스트 키
+    if((h && cyrb53(v) === h) || (target && v === norm(target))){
       m.className="msg ok"; m.textContent=CUR.ok; haptic(20);
       setTimeout(advance, 600);
     } else {
       m.className="msg bad"; m.textContent=CUR.bad;
+      hintFail();
     }
   }
 
@@ -93,36 +101,36 @@ const $ = id => document.getElementById(id);
   let ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");  // 시나리오 전환 시 startScenario가 갱신
   /* 트릭 registry — 트릭별 init/cleanup 계약(향후 reset/fallback/hint도 이리로) */
   const TRICKS = {   // inc2: 콘텐츠는 매니페스트 text 키 → bind 가 템플릿에 주입(시나리오 재사용 가능)
-    press:    { bind:(lv)=>{ const t=lv.text||{};
+    press:    { reset:pressReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l1-tag",CUR[t.tag]); setT("l1-riddle",CUR[t.riddle]); setT("l1-press",CUR[t.press]);
       setT("l1-reveal",CUR[t.reveal]); setT("l1-hint",CUR[t.hint]); } },
-    pinch:    { bind:(lv)=>{ const t=lv.text||{};
+    pinch:    { reset:pinchReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l2-tag",CUR[t.tag]); setT("l2-riddle",CUR[t.riddle]); setT("l2-before",CUR[t.before]);
       setT("l2-tiny",CUR[t.tiny]); setT("l2-after",CUR[t.after]); setT("l2-hint",CUR[t.hint]); } },
-    tilt:     { init:tiltInit, bind:(lv)=>{ const t=lv.text||{};
+    tilt:     { init:tiltInit, reset:tiltReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l3-tag",CUR[t.tag]); setT("l3-riddle",CUR[t.riddle]); setT("l3-secret",CUR[t.secret]);
       setT("l3-hint",CUR[t.hint]); setT("l3-fallback-hint",CUR[t.fbhint]); } },
-    blow:     { cleanup:stopMic, bind:(lv)=>{ const t=lv.text||{};
+    blow:     { cleanup:stopMic, reset:blowReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l4-tag",CUR[t.tag]); setT("l4-riddle",CUR[t.riddle]); setT("l4-hint",CUR[t.hint]); } },
-    route:    { init:routeInit, bind:(lv)=>{ const t=lv.text||{};
+    route:    { init:routeInit, reset:routeReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l5-tag",CUR[t.tag]); setT("l5-riddle",CUR[t.riddle]); setT("l5-hint",CUR[t.hint]); setT("l5-reveal",CUR[t.reveal]); } },
-    flame:    { init:flameInit, cleanup:flameStop, bind:(lv)=>{ const t=lv.text||{};
+    flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
-    row:      { init:rowInit, bind:(lv)=>{ const t=lv.text||{};
+    row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l7-tag",CUR[t.tag]); setT("l7-riddle",CUR[t.riddle]); setT("l7-hint",CUR[t.hint]); } },
-    rowpar:   { init:rpInit, bind:(lv)=>{ const t=lv.text||{};
+    rowpar:   { init:rpInit, reset:rpReset, bind:(lv)=>{ const t=lv.text||{};
       setT("rp-tag",CUR[t.tag]); setT("rp-riddle",CUR[t.riddle]); setT("rp-hint",CUR[t.hint]); } },
-    fold:     { init:foldInit, bind:(lv)=>{ const t=lv.text||{};
+    fold:     { init:foldInit, reset:foldReset, bind:(lv)=>{ const t=lv.text||{};
       setT("fold-tag",CUR[t.tag]); setT("fold-riddle",CUR[t.riddle]); setT("fold-hint",CUR[t.hint]); } },
-    ember:    { init:emberInit, cleanup:emberStop, bind:(lv)=>{ const t=lv.text||{};
+    ember:    { init:emberInit, cleanup:emberStop, reset:emberReset, bind:(lv)=>{ const t=lv.text||{};
       setT("ember-tag",CUR[t.tag]); setT("ember-riddle",CUR[t.riddle]); setT("ember-hint",CUR[t.hint]); } },
-    farewell: { init:fwInit, cleanup:fwStopLoop, bind:(lv)=>{ const t=lv.text||{};
+    farewell: { init:fwInit, cleanup:fwStopLoop, reset:fwReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
       setT("warm-tag",CUR[t.tag]); setT("warm-riddle",CUR[t.riddle]); setT("warm-hint",CUR[t.hint]); } },
-    road:     { init:roadInit, bind:(lv)=>{ const t=lv.text||{};
+    road:     { init:roadInit, reset:roadReset, bind:(lv)=>{ const t=lv.text||{};
       setT("road-tag",CUR[t.tag]); setT("road-riddle",CUR[t.riddle]); setT("road-hint",CUR[t.hint]); setT("road-reveal",CUR[t.reveal]); } },
-    erase:    { init:eraseInit, bind:(lv)=>{ const t=lv.text||{};
+    erase:    { init:eraseInit, reset:eraseReset, bind:(lv)=>{ const t=lv.text||{};
       setT("erase-tag",CUR[t.tag]); setT("erase-riddle",CUR[t.riddle]); setT("erase-hint",CUR[t.hint]); setT("erase-reveal",CUR[t.reveal]); } },
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
@@ -138,7 +146,9 @@ const $ = id => document.getElementById(id);
     window.scrollTo(0,0);
     const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[idx]);            // 콘텐츠 바인딩 + 트릭 준비(registry)
     const nt=lvl ? TRICKS[lvl.trick] : null;
+    if(nt && nt.reset) nt.reset();
     if(nt){ if(nt.bind) nt.bind(lvl); if(nt.init) nt.init(); }
+    setupHint(lvl);
     const _st=scenarioState(); _st.step=idx; if(ORDER[idx]==="done") _st.cleared=true; persist();
     if(ORDER[idx]==="done") runEnding(); else resetEnding();
   }
@@ -255,6 +265,7 @@ const $ = id => document.getElementById(id);
     const total=sc?sc.levels.length:1, done=Math.min(st.step||0,total);
     return { done, total, cleared:!!st.cleared };
   }
+  function isUnlocked(scid){ const sc=SCENARIOS[scid]; return !sc || !sc.gate || !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
     setT("hubTitle", CUR.hubTitle);
@@ -263,17 +274,24 @@ const $ = id => document.getElementById(id);
     Object.values(SERIES).forEach(series=>{
       const head=document.createElement("div"); head.className="series-head";
       head.textContent=CUR[series.titleKey]||series.id; list.appendChild(head);
+      if(series.quiz){
+        const ids=series.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
+        const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
+      }
       (series.scenarios||[]).forEach(scid=>{
         const sc=SCENARIOS[scid]; if(!sc) return;
         const st=SAVE.scenarios[sc.id]||{};
         const card=document.createElement("button"); card.className="hubcard";
+        const locked=!isUnlocked(sc.id), tower=series.quiz;
         const total=sc.levels.length, done=Math.min(st.step||0, total);   // step=완료 레벨 수
-        card.innerHTML=(st.cleared?"🟡 ":"🕯️ ")+(CUR[sc.titleKey]||sc.id)+
+        if(tower) card.classList.add("tower-card", locked?"locked":(st.cleared?"cleared":"current"));
+        card.innerHTML=(locked?"🔒 ":(st.cleared?(tower?"✓ ":"🟡 "):(tower?"✦ ":"🕯️ ")))+(CUR[sc.titleKey]||sc.id)+
           ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
-        card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
+        if(locked) card.disabled=true; else card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
         list.appendChild(card);
       });
       // 그 시리즈의 단편들(각 📖 + 하위 매듭 들여쓰기). 소설-먼저 = 항해는 매듭으로만.
+      if(series.quiz) return;
       (series.stories||[]).forEach((story, si)=>{
         if(!CUR[story.textKey]) return;
         const keys = story.knots ? Object.keys(story.knots) : [];
@@ -350,7 +368,7 @@ const $ = id => document.getElementById(id);
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
-  let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null;
+  let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
   let foldCount=0, foldNeed=3, foldDone=false, foldBound=false, foldSX=0, foldSY=0, foldDrag=false;
@@ -362,6 +380,7 @@ const $ = id => document.getElementById(id);
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
+  let hintTimer=null, hintFails=0, hintStep=0, hintLevel=null, pressNeed=600;
 
   /* 다시하기: 진행뿐 아니라 각 레벨의 일시적 UI 상태까지 초기화 */
   function resetLevels(){
@@ -384,6 +403,31 @@ const $ = id => document.getElementById(id);
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
+  }
+
+  function levelOpt(name, fb){ const l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); return (l && l[name]) || fb; }
+  function pressReset(){ pressNeed=levelOpt("pressMs",600); const b=$("pressBox"); if(b) b.classList.remove("lit"); revealCancel(); }
+  function pinchReset(){ const e=$("in2"), m=$("msg2"); if(e) e.value=""; if(m){ m.textContent=""; m.className="msg"; } }
+  function tiltReset(){ const b=$("tiltBox"); if(b) b.classList.remove("show"); const g=$("gauge"); if(g) g.textContent=CUR.gaugeInit; revealCancel(); }
+  function blowReset(){ stopMic(); sailDone=false; oarFill=0; setSail(0,0); $("windBtn").style.display=""; $("oarBtn").style.display="none"; }
+  function clearHintUI(){
+    const old=document.querySelector(".hintbox"); if(old) old.remove();
+    if(hintTimer){ clearTimeout(hintTimer); hintTimer=null; }
+  }
+  function setupHint(lvl){
+    clearHintUI(); hintFails=0; hintStep=0; hintLevel=lvl;
+    if(!lvl || !lvl.hints) return;
+    hintTimer=setTimeout(showHintButton,60000);
+  }
+  function hintFail(){ hintFails++; if(hintFails>=3) showHintButton(); }
+  function showHintButton(){
+    if(!hintLevel || !hintLevel.hints || document.querySelector(".hintbox")) return;
+    const lv=$(ORDER[curIdx]); if(!lv) return;
+    const box=document.createElement("div"); box.className="hintbox";
+    const btn=document.createElement("button"); btn.className="hint-reveal"; btn.textContent=CUR.hintCta||"Hint";
+    const text=document.createElement("div"); text.className="hint-detail";
+    btn.addEventListener("click",()=>{ const keys=hintLevel.hints||[]; if(hintStep<keys.length) text.textContent=CUR[keys[hintStep++]]||""; });
+    box.appendChild(btn); box.appendChild(text); lv.appendChild(box);
   }
 
   /* ===== 초기화 ===== */
@@ -420,7 +464,7 @@ const $ = id => document.getElementById(id);
   /* ===== LEVEL 1 — 길게 누르기(600ms) ===== */
   (function(){
     const box=$("pressBox"); let t=null;
-    const start=e=>{ t=setTimeout(()=>{ box.classList.add("lit"); haptic(20); revealAdvance(); },600); };
+    const start=e=>{ t=setTimeout(()=>{ box.classList.add("lit"); haptic(20); revealAdvance(); },pressNeed); };
     const end=e=>{ clearTimeout(t); };
     box.addEventListener("touchstart",start,{passive:true});
     box.addEventListener("touchend",end);
@@ -787,7 +831,7 @@ const $ = id => document.getElementById(id);
   }
   function flameLoop(){
     if(!flameDone){
-      if(flameSheltering || flameBtnHold) flameShelter=Math.min(100, flameShelter+2.0);
+      if(flameSheltering || flameBtnHold) flameShelter=Math.min(100, flameShelter+flameGain);
       else                                flameShelter=Math.max(0, flameShelter-1.1);
       flameRender();
       if(flameShelter>=100){ flameComplete(); return; }
@@ -803,7 +847,7 @@ const $ = id => document.getElementById(id);
     setTimeout(advance, 3000);              // lv6 → done
   }
   function flameReset(){
-    flameShelter=0; flameDone=false; flameSheltering=false; flameBtnHold=false;
+    flameShelter=0; flameDone=false; flameSheltering=false; flameBtnHold=false; flameGain=levelOpt("flameGain",2.0);
     const ff=$("flameFill"); if(ff) ff.style.width="0%";
     const fl=$("flame"); if(fl){ fl.classList.remove("steady"); fl.style.opacity=""; }
     const fg=$("flameGauge"); if(fg){ fg.textContent=CUR.l6shelterPrefix+"0%"; fg.classList.remove("done"); }
@@ -848,7 +892,7 @@ const $ = id => document.getElementById(id);
     setTimeout(advance, 3000);                  // lv7 → done
   }
   function rowReset(){
-    rowCount=0; rowNext='left'; rowDone=false;
+    rowCount=0; rowNeed=levelOpt("need",12); rowNext='left'; rowDone=false;
     const f=$("rowFill"); if(f) f.style.width="0%";
     ["oarL","oarR"].forEach(id=>{ const o=$(id); if(o) o.classList.remove("stroke","next"); });
     const rg=$("rowGauge"); if(rg){ rg.classList.remove("done"); rowRender(); }

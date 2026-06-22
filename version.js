@@ -1,1 +1,1 @@
-(function(){ var b=document.getElementById('build'); if(b) b.textContent='build c0d25de · 06-23 02:12'; })()
+(function(){ var b=document.getElementById('build'); if(b) b.textContent='build quiztower-v1 · 06-23 06:56'; })()

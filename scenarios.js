@@ -65,6 +65,35 @@ const SCENARIOS = {
     ],
     ending: { title:"eraseDoneTitle", body:"eraseDoneBody", end:"eraseDoneEnd", stay:"eraseStay", seqKey:"eraseSeq" },   // 코다는 소설 본문 몫
   },
+  tower_t1: {
+    id: "tower_t1", titleKey: "sc_tower_t1", series:"tower", quiz:true,
+    levels: [
+      { sec:"lv1", trick:"press", text:{ tag:"qt1pTag", riddle:"qt1pRiddle", press:"qt1pPress", reveal:"qtReveal", hint:"qt1pHint" }, hints:["qt1pH1","qt1pH2","qt1pH3"] },
+      { sec:"lv2", trick:"pinch", ansHash:{ko:7382375430922488,en:3713240614062855}, text:{ tag:"qt1zTag", riddle:"qt1zRiddle", before:"qt1zBefore", tiny:"qt1zTiny", after:"qt1zAfter", hint:"qt1zHint" }, hints:["qt1zH1","qt1zH2","qt1zH3"] },
+      { sec:"lv3", trick:"tilt", text:{ tag:"qt1tTag", riddle:"qt1tRiddle", secret:"qtReveal", hint:"qt1tHint", fbhint:"qt1tFbHint" }, hints:["qt1tH1","qt1tH2","qt1tH3"] },
+      { sec:"lv4", trick:"blow", text:{ tag:"qt1bTag", riddle:"qt1bRiddle", hint:"qt1bHint" }, hints:["qt1bH1","qt1bH2","qt1bH3"] },
+      { sec:"lv5", trick:"route", text:{ tag:"qt1rTag", riddle:"qt1rRiddle", hint:"qt1rHint", reveal:"qtReveal" }, hints:["qt1rH1","qt1rH2","qt1rH3"] },
+      { sec:"lv6", trick:"flame", text:{ tag:"qt1fTag", riddle:"qt1fRiddle", hint:"qt1fHint" }, hints:["qt1fH1","qt1fH2","qt1fH3"] },
+    ],
+    ending: { title:"qt1DoneTitle", body:"qt1DoneBody", end:"qt1DoneEnd" },
+  },
+  tower_t2: {
+    id: "tower_t2", titleKey: "sc_tower_t2", series:"tower", quiz:true, gate:"tower_t1",
+    levels: [
+      { sec:"lv7", trick:"row", need:16, text:{ tag:"qt2rTag", riddle:"qt2rRiddle", hint:"qt2rHint" }, hints:["qt2rH1","qt2rH2","qt2rH3"] },
+      { sec:"lv6", trick:"flame", flameGain:1.45, text:{ tag:"qt2fTag", riddle:"qt2fRiddle", hint:"qt2fHint" }, hints:["qt2fH1","qt2fH2","qt2fH3"] },
+      { sec:"lv1", trick:"press", pressMs:1000, text:{ tag:"qt2pTag", riddle:"qt2pRiddle", press:"qt2pPress", reveal:"qtReveal", hint:"qt2pHint" }, hints:["qt2pH1","qt2pH2","qt2pH3"] },
+    ],
+    ending: { title:"qt2DoneTitle", body:"qt2DoneBody", end:"qt2DoneEnd" },
+  },
+  tower_t3: {
+    id: "tower_t3", titleKey: "sc_tower_t3", series:"tower", quiz:true, gate:"tower_t2",
+    levels: [
+      { sec:"lv3", trick:"tilt", text:{ tag:"qt3tTag", riddle:"qt3tRiddle", secret:"qtReveal", hint:"qt3tHint", fbhint:"qt3tFbHint" }, hints:["qt3tH1","qt3tH2","qt3tH3"] },
+      { sec:"lv4", trick:"blow", text:{ tag:"qt3bTag", riddle:"qt3bRiddle", hint:"qt3bHint" }, hints:["qt3bH1","qt3bH2","qt3bH3"] },
+    ],
+    ending: { title:"qt3DoneTitle", body:"qt3DoneBody", end:"qt3DoneEnd" },
+  },
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
 };
@@ -99,5 +128,13 @@ const SERIES = {
         knots: { road:{ scid:"road_knot", label:"knotRoadLabel" },
                  erase:{ scid:"erase_knot", label:"knotEraseLabel" } } },
     ],
+  },
+  tower: {
+    id: "tower",
+    titleKey: "seriesTower",
+    scenarios: ["tower_t1","tower_t2","tower_t3"],
+    novelFirst: false,
+    quiz: true,
+    stories: [],
   },
 };
