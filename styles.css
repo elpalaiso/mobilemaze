@@ -151,6 +151,10 @@
     margin:20px 0 10px; position:relative; }
   .bookcard{ border-style:dashed; border-color:#3a4663; }
   .hubcount.story{ color:var(--accent); font-style:italic; }
+  /* 소설 하위 매듭(들여쓰기 가지) */
+  .knotsub{ margin-left:22px; padding:11px 14px; font-size:13.5px; color:var(--dim);
+    background:transparent; border-color:#222a3d; }
+  .knotbranch{ color:#3a4663; margin-right:4px; }
   /* 멀티 시리즈 — 항구 섹션 헤더 + "곧" 표시 */
   .series-head{ text-align:center; color:var(--accent); font-size:13px; letter-spacing:.16em;
     margin:24px 0 12px; opacity:.9; }

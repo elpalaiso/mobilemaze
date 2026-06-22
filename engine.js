@@ -147,6 +147,7 @@ const $ = id => document.getElementById(id);
   let endingTimers=[];
   let bookSeries=null;   // 현재 책 뷰가 보여주는 시리즈(시리즈별 단편)
   let fromStory=false;   // 곁가지 매듭을 소설(book)에서 실행했는가 → 엔딩 카드가 이야기로 복귀
+  let lastKnotScid=null; // 직전 실행한 매듭 시나리오 id(복귀 시 그 자리로 스크롤)
   let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
@@ -158,7 +159,7 @@ const $ = id => document.getElementById(id);
     setT("share-title", mem?CUR.memShareTitle:CUR.shareTitle);
     setT("share-body",  mem?CUR.memShareBody :CUR.shareBody);
     const sb=$("shareBtn"); if(sb){ sb.textContent=CUR.shareBtn; sb.style.display = mem?"none":""; }
-    setT("backHarborBtn", mem?CUR.memBackToStory:CUR.backToHarbor);
+    setT("backHarborBtn", (mem && fromStory)?CUR.memBackToStory:CUR.backToHarbor);   // 이야기서 왔으면 '이야기로', 허브서 왔으면 '항구로'
   }
   function seqClearTimer(){ if(seqTimer){ clearTimeout(seqTimer); seqTimer=null; } }
   function resetEnding(){
@@ -177,8 +178,8 @@ const $ = id => document.getElementById(id);
     const p=document.createElement("p"); p.className="seq-line"; p.textContent=line;
     seqEl.appendChild(p);
     requestAnimationFrame(()=>{ p.classList.add("in"); try{ p.scrollIntoView({behavior:"smooth", block:"nearest"}); }catch(e){} });
-    if(seqIdx < seqLines.length) seqTimer=setTimeout(seqStep, (line.length<=10?1500:2200));
-    else seqTimer=setTimeout(seqFinish, 2200);
+    if(seqIdx < seqLines.length) seqTimer=setTimeout(seqStep, (line.length<=12?650:950));   // 빠른 촤르륵(흐름 유지)
+    else seqTimer=setTimeout(seqFinish, 1100);
   }
   function seqFinish(){
     seqClearTimer();
@@ -257,13 +258,25 @@ const $ = id => document.getElementById(id);
         card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
         list.appendChild(card);
       });
-      // 그 시리즈의 캡스톤 단편(있고 텍스트 준비됐을 때만)
+      // 그 시리즈의 단편(있고 텍스트 준비됐을 때만)
       if(series.story && CUR[series.story.textKey]){
         const sid=series.id;
         const book=document.createElement("button"); book.className="hubcard bookcard";
         book.innerHTML="📖 "+(CUR[series.story.titleKey]||"")+' <span class="hubcount story">'+(CUR[series.story.tagKey]||"")+'</span>';
         book.addEventListener("click",()=>openBook(sid));
         list.appendChild(book);
+        // 소설 중심 시리즈: 단편 하위로 매듭 트릭 들여쓰기 표시(구조 가시화 + 직접 점프)
+        if(series.knots){
+          Object.keys(series.knots).forEach(key=>{
+            const scid=series.knots[key], sc=SCENARIOS[scid]; if(!sc) return;
+            const st=SAVE.scenarios[scid]||{};
+            const sub=document.createElement("button"); sub.className="hubcard knotsub";
+            const label=key==="erase"?CUR.knotEraseLabel:CUR.knotRoadLabel;
+            sub.innerHTML='<span class="knotbranch">└</span> '+(st.cleared?"✓ ":"")+label;
+            sub.addEventListener("click",()=>openKnot(scid, true));   // 허브서 실행 → 항구로 복귀
+            list.appendChild(sub);
+          });
+        }
       }
       // 아직 비어있는 시리즈 = "곧" 표시(골격 가시화)
       if(series.comingSoon && !(series.scenarios||[]).length){
@@ -286,6 +299,7 @@ const $ = id => document.getElementById(id);
           // 인라인 매듭 — 소설 본문서 트릭 실행 버튼
           const key=km[1], scid=knotM[key];
           el=document.createElement("button"); el.className="knot-btn";
+          if(scid) el.id="knot-"+scid;   // 복귀 시 이 자리로 스크롤
           const label = key==="erase" ? CUR.knotEraseLabel : CUR.knotRoadLabel;
           const st = scid && SAVE.scenarios[scid];
           const done = st && st.cleared;
@@ -305,8 +319,15 @@ const $ = id => document.getElementById(id);
     setT("bookBack", CUR.backToHarbor);
   }
   function openBook(seriesId){ bookSeries = SERIES[seriesId] || SERIES.boatman; renderBook(true); window.scrollTo(0,0); showView("book"); }
-  /* 소설 안에서 매듭(곁가지) 실행 — 항상 트릭부터(fresh), 엔딩 카드의 '이야기로' 가 복귀시킴 */
-  function openKnot(scid){ if(!SCENARIOS[scid]) return; startScenario(scid, true); fromStory=true; window.scrollTo(0,0); showView("play"); }
+  /* 소설 안에서 매듭(곁가지) 실행 — 항상 트릭부터(fresh). keepHub=true(허브서 실행)면 항구로, 아니면 이야기로 복귀 */
+  function openKnot(scid, keepHub){ if(!SCENARIOS[scid]) return; lastKnotScid=scid; startScenario(scid, true); fromStory=!keepHub; window.scrollTo(0,0); showView("play"); }
+  /* 매듭 끝나고 소설로 — 즉시 재렌더(촤르륵 X) 후 *그 매듭 자리*로 스크롤(처음으로 안 튐) */
+  function returnToStory(){
+    bookSeries = SERIES.memory; renderBook(false); showView("book");
+    const el = lastKnotScid && $("knot-"+lastKnotScid);
+    if(el){ requestAnimationFrame(()=>{ try{ el.scrollIntoView({block:"center"}); }catch(e){ window.scrollTo(0,0); } }); }
+    else window.scrollTo(0,0);
+  }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
@@ -370,7 +391,7 @@ const $ = id => document.getElementById(id);
         sb.textContent="🔗"; setTimeout(()=>setT("shareBtn",CUR.shareBtn),1500); }catch(e){}
     }); }
   { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{
-      if(fromStory){ fromStory=false; openBook("memory"); }   // 소설 매듭 → 이야기로 복귀
+      if(fromStory){ fromStory=false; returnToStory(); }   // 소설 매듭 → 이야기의 그 자리로 복귀
       else { buildHub(); showView("hub"); }
     }); }
 
