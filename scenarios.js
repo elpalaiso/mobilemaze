@@ -48,15 +48,22 @@ const SCENARIOS = {
     ],
     ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd", coda:"lanternCoda" },
   },
-  /* 동쪽 길의 작별 — 기억 시리즈 첫 항해(세진의 응어리=도연과의 작별). 새 트릭 '길 그리기' +
-     동의 비트(리들) + 긴 엔딩 seqKey(느린 망각) + 시리즈 잔류 라인(ending.stay). */
-  road_doyeon: {
-    id: "road_doyeon",
-    titleKey: "sc_road",
+  /* 기억 시리즈 「그려둔 길」의 *인라인 매듭* 2개 — 허브 카드 아님. 소설(book) 본문의
+     ⟦KNOT:road⟧·⟦KNOT:erase⟧ 지점에서 실행 → 엔딩 카드(측량가 버전) → 이야기로 복귀.
+     series:"memory"+knot:true → 엔딩 카드 오버라이드 + backHarborBtn=이야기로 돌아가기. */
+  road_knot: {                 // 작별 매듭 — 길 그리기(시작점→도시)
+    id: "road_knot", titleKey: "sc_road", series: "memory", knot: true,
     levels: [
       { sec:"lvRoad", trick:"road", text:{ tag:"roadTag", riddle:"roadRiddle", hint:"roadHint", reveal:"roadReveal" } },
     ],
-    ending: { title:"roadDoneTitle", body:"roadDoneBody", end:"roadDoneEnd", coda:"roadCoda", stay:"roadStay", seqKey:"roadSeq" },
+    ending: { title:"roadDoneTitle", body:"roadDoneBody", end:"roadDoneEnd", coda:"roadCoda", stay:"roadStay" },
+  },
+  erase_knot: {                // 망각 매듭 — 되짚어 지우기(끝→시작점). 느린 망각 seqKey + 잔류.
+    id: "erase_knot", titleKey: "sc_erase", series: "memory", knot: true,
+    levels: [
+      { sec:"lvErase", trick:"erase", text:{ tag:"eraseTag", riddle:"eraseRiddle", hint:"eraseHint", reveal:"eraseReveal" } },
+    ],
+    ending: { title:"eraseDoneTitle", body:"eraseDoneBody", end:"eraseDoneEnd", coda:"eraseCoda", stay:"eraseStay", seqKey:"eraseSeq" },
   },
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
@@ -75,8 +82,10 @@ const SERIES = {
   memory: {
     id: "memory",
     titleKey: "seriesMemory",
-    scenarios: ["road_doyeon"],   // 측량가/기억 시리즈(MemoryGame 재구성). 캡스톤 단편은 항해 쌓인 뒤.
-    story: null,
+    scenarios: [],                          // 곁가지 카드 없음 — 소설 안에서 인라인 매듭으로 실행
+    story: { titleKey: "memTitle", tagKey: "memTag", textKey: "memStory" },   // 「그려둔 길」
+    novelFirst: true,                       // 허브에서 📖 소설이 *입구*
+    knots: { road: "road_knot", erase: "erase_knot" },   // ⟦KNOT:key⟧ → 시나리오 id
     comingSoon: false,
   },
 };

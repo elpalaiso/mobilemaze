@@ -45,8 +45,7 @@ const $ = id => document.getElementById(id);
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
     setT("end-stay",endK("stay","endStay")); setCoda();
-    setT("share-title",CUR.shareTitle); setT("share-body",CUR.shareBody);
-    setT("shareBtn",CUR.shareBtn); setT("backHarborBtn",CUR.backToHarbor);
+    endCardChrome();
     setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
     $("done-body").innerHTML = endK("body","doneBody");
     document.querySelectorAll(".confirmBtn").forEach(b=>b.textContent=CUR.confirm);
@@ -123,6 +122,8 @@ const $ = id => document.getElementById(id);
       setT("warm-tag",CUR[t.tag]); setT("warm-riddle",CUR[t.riddle]); setT("warm-hint",CUR[t.hint]); } },
     road:     { init:roadInit, bind:(lv)=>{ const t=lv.text||{};
       setT("road-tag",CUR[t.tag]); setT("road-riddle",CUR[t.riddle]); setT("road-hint",CUR[t.hint]); setT("road-reveal",CUR[t.reveal]); } },
+    erase:    { init:eraseInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("erase-tag",CUR[t.tag]); setT("erase-riddle",CUR[t.riddle]); setT("erase-hint",CUR[t.hint]); setT("erase-reveal",CUR[t.reveal]); } },
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
@@ -145,11 +146,20 @@ const $ = id => document.getElementById(id);
   /* 엔딩 카피는 시나리오별(매니페스트 ending) → 없으면 글로벌 폴백. 잔류 항상성 라인·공유 카드는 불변(글로벌). */
   let endingTimers=[];
   let bookSeries=null;   // 현재 책 뷰가 보여주는 시리즈(시리즈별 단편)
+  let fromStory=false;   // 곁가지 매듭을 소설(book)에서 실행했는가 → 엔딩 카드가 이야기로 복귀
   let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
   function curLevelText(name, fb){ const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
   function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
+  /* 엔딩 카드 하단: 시리즈별 오버라이드. 기억(측량가)=공유 버튼 숨김 + 측량가 카피 + "이야기로 돌아가기". */
+  function endCardChrome(){
+    const mem = RUN.scenario && RUN.scenario.series==="memory";
+    setT("share-title", mem?CUR.memShareTitle:CUR.shareTitle);
+    setT("share-body",  mem?CUR.memShareBody :CUR.shareBody);
+    const sb=$("shareBtn"); if(sb){ sb.textContent=CUR.shareBtn; sb.style.display = mem?"none":""; }
+    setT("backHarborBtn", mem?CUR.memBackToStory:CUR.backToHarbor);
+  }
   function seqClearTimer(){ if(seqTimer){ clearTimeout(seqTimer); seqTimer=null; } }
   function resetEnding(){
     endingTimers.forEach(t=>clearTimeout(t)); endingTimers=[];
@@ -182,6 +192,7 @@ const $ = id => document.getElementById(id);
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd"));
     $("done-body").innerHTML = endK("body","doneBody"); setCoda();
     setT("end-stay",endK("stay","endStay"));   // 시리즈별 잔류 라인(ending.stay) → 없으면 글로벌 폴백
+    endCardChrome();                            // 카드 하단 시리즈별(측량가 vs 뱃사공)
     const e=RUN.scenario && RUN.scenario.ending;
     const seqArr = (e && e.seqKey && Array.isArray(CUR[e.seqKey])) ? CUR[e.seqKey] : null;
     const seqEl=$("endSeq");
@@ -205,13 +216,14 @@ const $ = id => document.getElementById(id);
     const n=RUN.scenario.levels.length, d=$("dots");
     if(d) d.innerHTML = Array.from({length:n},()=>"<i></i>").join("");
   }
-  function startScenario(id){
+  function startScenario(id, fresh){
+    fromStory=false;          // 기본은 허브 경유 — openKnot가 호출 후 true로 덮음
     stopMic(); flameStop(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
     resetLevels();            // 트릭 전역 상태 0으로 — 시나리오 간 공유 트릭(row 등) 오염 방지
-    show(loadProgress());
+    show(fresh ? 0 : loadProgress());   // 매듭은 항상 트릭부터(fresh)
   }
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
   function showView(v){
@@ -266,11 +278,26 @@ const $ = id => document.getElementById(id);
     if(page){
       page.innerHTML="";
       const paras = CUR[textKey] || (I18N.ko && I18N.ko[textKey]) || [];
+      const knotM = s.knots || {};
       paras.forEach((para,i)=>{
-        const sep=(para==="✶");
-        const el=document.createElement(sep?"div":"p");
-        el.className = sep ? "book-sep" : "book-para";
-        el.textContent = para;
+        let el;
+        const km = (typeof para==="string") && para.match(/^⟦KNOT:(\w+)⟧$/);
+        if(km){
+          // 인라인 매듭 — 소설 본문서 트릭 실행 버튼
+          const key=km[1], scid=knotM[key];
+          el=document.createElement("button"); el.className="knot-btn";
+          const label = key==="erase" ? CUR.knotEraseLabel : CUR.knotRoadLabel;
+          const st = scid && SAVE.scenarios[scid];
+          const done = st && st.cleared;
+          el.textContent = (done?"✓ ":"▶ ")+(label||key);
+          if(done) el.classList.add("done");
+          if(scid) el.addEventListener("click",()=>openKnot(scid));
+        } else {
+          const sep=(para==="✶");
+          el=document.createElement(sep?"div":"p");
+          el.className = sep ? "book-sep" : "book-para";
+          el.textContent = para;
+        }
         if(cascade){ el.style.opacity="0"; setTimeout(()=>{ el.style.transition="opacity .35s ease"; el.style.opacity="1"; }, 70*i); }  // 펼치면 촤르륵
         page.appendChild(el);
       });
@@ -278,6 +305,8 @@ const $ = id => document.getElementById(id);
     setT("bookBack", CUR.backToHarbor);
   }
   function openBook(seriesId){ bookSeries = SERIES[seriesId] || SERIES.boatman; renderBook(true); window.scrollTo(0,0); showView("book"); }
+  /* 소설 안에서 매듭(곁가지) 실행 — 항상 트릭부터(fresh), 엔딩 카드의 '이야기로' 가 복귀시킴 */
+  function openKnot(scid){ if(!SCENARIOS[scid]) return; startScenario(scid, true); fromStory=true; window.scrollTo(0,0); showView("play"); }
 
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
@@ -290,6 +319,7 @@ const $ = id => document.getElementById(id);
   let emberProg=0, emberTarget=0, emberCarry=false, emberDone=false, emberBound=false, emberRaf=null;  // 불씨 옮기기
   let emberTrackLeft=0, emberX0=0, emberX1=0;   // 두 등불 중심(트랙 기준 px)
   let roadCanvas=null, roadCtx=null, roadPts=[], roadHit=0, roadStroke=[], roadDrawing=false, roadDone=false, roadBound=false;  // 길 그리기(기억)
+  let eraseCanvas=null, eraseCtx=null, erasePts=[], eraseGone=0, eraseDrawing=false, eraseDone=false, eraseBound=false;  // 되짚어 지우기(기억)
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -309,7 +339,8 @@ const $ = id => document.getElementById(id);
     rpReset();                                        // 나란히 젓기(새벽 강)
     foldReset();                                      // 종이배 접기(새벽 강)
     emberReset();                                     // 불씨 옮기기(등불 항구)
-    roadReset();                                      // 길 그리기(기억 시리즈)
+    roadReset();                                      // 길 그리기(작별 매듭)
+    eraseReset();                                     // 되짚어 지우기(망각 매듭)
     warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
@@ -338,7 +369,10 @@ const $ = id => document.getElementById(id);
       try{ await navigator.clipboard.writeText(data.text+" "+data.url);
         sb.textContent="🔗"; setTimeout(()=>setT("shareBtn",CUR.shareBtn),1500); }catch(e){}
     }); }
-  { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
+  { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{
+      if(fromStory){ fromStory=false; openBook("memory"); }   // 소설 매듭 → 이야기로 복귀
+      else { buildHub(); showView("hub"); }
+    }); }
 
   /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 (상태는 상단 선언) */
   function revealAdvance(){ if(revealAdv) return; revealAdv=true; revealTimer=setTimeout(()=>{ revealAdv=false; revealTimer=null; advance(); }, 3000); }
@@ -611,6 +645,89 @@ const $ = id => document.getElementById(id);
       roadCtx.fillText("🚶", last.x*w, last.y*h - 16);
       roadCtx.restore();
     }
+  }
+
+  /* ===== 되짚어 지우기(erase) — 기억 시리즈 망각: 그어 둔 길을 *끝→시작점* 거꾸로 천천히 지운다 =====
+     길 그리기(road)의 역(逆). 같은 경로(ROAD_PTS)가 처음부터 다 그어져 있고, 끝(🏙)부터 역순으로
+     웨이포인트를 되짚으면 길이 한 칸씩 사라진다. 다 지우면 빈 종이 → 망각 seqKey 엔딩으로. */
+  function eraseInit(){
+    if(!eraseCanvas){
+      eraseCanvas = $("eraseCanvas");
+      eraseCtx = eraseCanvas.getContext("2d");
+      erasePts = ROAD_PTS.map(p=>({x:p.x,y:p.y}));
+      const down=e=>{ eraseDrawing=true; eraseAdd(e); };
+      const move=e=>{ if(eraseDrawing){ e.preventDefault(); eraseAdd(e); } };
+      const up=()=>{ eraseDrawing=false; };
+      eraseCanvas.addEventListener("pointerdown",down);
+      eraseCanvas.addEventListener("pointermove",move);
+      eraseCanvas.addEventListener("pointerup",up);
+      eraseCanvas.addEventListener("pointerleave",up);
+      eraseBound=true;
+    }
+    if(!erasePts.length) erasePts = ROAD_PTS.map(p=>({x:p.x,y:p.y}));
+    eraseSize(); eraseRender();
+  }
+  function eraseSize(){
+    if(!eraseCanvas) return;
+    eraseCanvas.width = eraseCanvas.clientWidth || 320;
+    eraseCanvas.height = 220;
+  }
+  function eraseAdd(e){
+    if(eraseDone || !eraseCanvas) return;
+    const r=eraseCanvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    const idx=(erasePts.length-1)-eraseGone;   // 끝에서부터 역순 프런티어
+    if(idx>=0){
+      const nx=erasePts[idx].x*eraseCanvas.width, ny=erasePts[idx].y*eraseCanvas.height;
+      if(Math.hypot(x-nx,y-ny) < 26){ eraseGone++; haptic(10); }
+    }
+    eraseRender();
+    if(eraseGone >= erasePts.length) eraseComplete();
+  }
+  function eraseComplete(){
+    if(eraseDone) return; eraseDone=true; haptic([0,60,30,60,30,90]);
+    const rv=$("erase-reveal"); if(rv) rv.classList.add("show");
+    eraseRender();
+    revealAdvance();
+  }
+  function eraseReset(){
+    eraseGone=0; eraseDone=false;
+    const rv=$("erase-reveal"); if(rv) rv.classList.remove("show");
+    eraseRender();
+  }
+  function eraseRender(){
+    if(!eraseCtx || !eraseCanvas) return;
+    const w=eraseCanvas.width, h=eraseCanvas.height, n=erasePts.length;
+    eraseCtx.clearRect(0,0,w,h);
+    const frontier=(n-1)-eraseGone;   // 이 인덱스까지 길이 남아 있음(-1이면 다 지워짐)
+    eraseCtx.lineWidth=3; eraseCtx.lineCap="round"; eraseCtx.lineJoin="round";
+    // 남은 길(황금 실선)
+    if(frontier>0){
+      eraseCtx.strokeStyle="rgba(227,165,66,.6)";
+      eraseCtx.beginPath();
+      for(let i=0;i<=frontier;i++){ const p=erasePts[i]; i?eraseCtx.lineTo(p.x*w,p.y*h):eraseCtx.moveTo(p.x*w,p.y*h); }
+      eraseCtx.stroke();
+    }
+    // 지워진 꼬리(흐릿한 잔흔) — 다 지우기 전까지만
+    if(frontier < n-1 && !eraseDone){
+      const s=Math.max(0,frontier);
+      eraseCtx.strokeStyle="rgba(58,70,99,.22)";
+      eraseCtx.beginPath();
+      for(let i=s;i<n;i++){ const p=erasePts[i]; i===s?eraseCtx.moveTo(p.x*w,p.y*h):eraseCtx.lineTo(p.x*w,p.y*h); }
+      eraseCtx.stroke();
+    }
+    // 점들
+    erasePts.forEach((p,i)=>{
+      const sx=p.x*w, sy=p.y*h, kept=i<=frontier;
+      eraseCtx.beginPath(); eraseCtx.arc(sx,sy, kept?5:3, 0,7);
+      eraseCtx.fillStyle = kept ? "#e3a542" : "#222a3d"; eraseCtx.fill();
+    });
+    // 시작점 ● / 끝 🏙 — 지우기 시작하면 도시는 흐려진다
+    const a=erasePts[0], z=erasePts[n-1];
+    eraseCtx.save(); eraseCtx.font="16px serif"; eraseCtx.textAlign="center"; eraseCtx.textBaseline="middle";
+    if(a && !eraseDone){ eraseCtx.fillStyle="#e3a542"; eraseCtx.fillText("●", a.x*w, a.y*h-14); }
+    if(z){ eraseCtx.globalAlpha = eraseGone>0?0.22:1; eraseCtx.fillText("🏙", z.x*w, z.y*h-16); }
+    eraseCtx.restore();
   }
 
   /* ===== LEVEL 6 — 두 손가락 감싸기(등불 보살핌): 불씨를 양손으로 감싸 지킨다 ===== */
