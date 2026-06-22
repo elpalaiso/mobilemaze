@@ -48,7 +48,7 @@ const SCENARIOS = {
     ],
     ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd" },   // 코다(이름 없는 등불)는 소설 본문 몫
   },
-  /* 기억 시리즈 「그려둔 길」의 *인라인 매듭* 2개 — 허브 카드 아님. 소설(book) 본문의
+  /* 측량가 시리즈 「그려둔 길」의 *인라인 매듭* 2개 — 허브 카드 아님. 소설(book) 본문의
      ⟦KNOT:road⟧·⟦KNOT:erase⟧ 지점에서 실행 → 엔딩 카드(측량가 버전) → 이야기로 복귀.
      series:"memory"+knot:true → 엔딩 카드 오버라이드 + backHarborBtn=이야기로 돌아가기. */
   road_knot: {                 // 작별 매듭 — 길 그리기(시작점→도시)

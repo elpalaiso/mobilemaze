@@ -155,7 +155,7 @@ const $ = id => document.getElementById(id);
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
   function curLevelText(name, fb){ const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
   function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
-  /* 엔딩 카드 하단: 시리즈별 오버라이드. 기억(측량가)=공유 버튼 숨김 + 측량가 카피 + "이야기로 돌아가기". */
+  /* 엔딩 카드 하단: 시리즈별 오버라이드. 측량가=공유 버튼 숨김 + 측량가 카피 + "이야기로 돌아가기". */
   function endCardChrome(){
     const mem = RUN.scenario && RUN.scenario.series==="memory";
     setT("share-title", mem?CUR.memShareTitle:CUR.shareTitle);
@@ -357,8 +357,8 @@ const $ = id => document.getElementById(id);
   let revealAdv=false, revealTimer=null;   // L1/L3/L5 자동진행 — resetLevels보다 먼저 선언(TDZ 방지)
   let emberProg=0, emberTarget=0, emberCarry=false, emberDone=false, emberBound=false, emberRaf=null;  // 불씨 옮기기
   let emberTrackLeft=0, emberX0=0, emberX1=0;   // 두 등불 중심(트랙 기준 px)
-  let roadCanvas=null, roadCtx=null, roadPts=[], roadHit=0, roadStroke=[], roadDrawing=false, roadDone=false, roadBound=false;  // 길 그리기(기억)
-  let eraseCanvas=null, eraseCtx=null, erasePts=[], eraseGone=0, eraseDrawing=false, eraseDone=false, eraseBound=false;  // 되짚어 지우기(기억)
+  let roadCanvas=null, roadCtx=null, roadPts=[], roadHit=0, roadStroke=[], roadDrawing=false, roadDone=false, roadBound=false;  // 길 그리기(측량가)
+  let eraseCanvas=null, eraseCtx=null, erasePts=[], eraseGone=0, eraseDrawing=false, eraseDone=false, eraseBound=false;  // 되짚어 지우기(측량가)
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -595,9 +595,9 @@ const $ = id => document.getElementById(id);
     });
   }
 
-  /* ===== 길 그리기(road) — 기억 시리즈: 측량가가 도연에게 가는 동쪽 길을 *순서대로* 그린다 =====
-     route와 달리 웨이포인트를 처음→끝 순서로 통과해야 한다(길이니까). 마지막 점=도연. 완주 시
-     도연이 흐려지고(잊혀짐의 시작) #road-reveal(작별 약속)이 떠오른 뒤 느린-망각 엔딩으로. */
+  /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
+     route와 달리 웨이포인트를 처음→끝 순서로 통과해야 한다(길이니까). 마지막 점=떠나는 사람. 완주 시
+     떠나는 사람이 흐려지고(잊혀짐의 시작) #road-reveal(작별 약속)이 떠오른 뒤 느린-망각 엔딩으로. */
   const ROAD_PTS = [
     {x:0.10,y:0.80},{x:0.27,y:0.62},{x:0.43,y:0.68},
     {x:0.60,y:0.46},{x:0.77,y:0.52},{x:0.90,y:0.30}
@@ -675,7 +675,7 @@ const $ = id => document.getElementById(id);
       roadCtx.beginPath(); roadCtx.arc(sx,sy, passed?6:4, 0, 7);
       roadCtx.fillStyle = passed ? "#e3a542" : "#3a4663"; roadCtx.fill();
     });
-    // 마지막 점 = 도연. 완주 전엔 또렷, 완주(작별) 후엔 흐려진다 — 잊혀짐의 시작.
+    // 마지막 점 = 떠나는 사람. 완주 전엔 또렷, 완주(작별) 후엔 흐려진다 — 잊혀짐의 시작.
     const last=roadPts[roadPts.length-1];
     if(last){
       roadCtx.save();
@@ -686,7 +686,7 @@ const $ = id => document.getElementById(id);
     }
   }
 
-  /* ===== 되짚어 지우기(erase) — 기억 시리즈 망각: 그어 둔 길을 *끝→시작점* 거꾸로 천천히 지운다 =====
+  /* ===== 되짚어 지우기(erase) — 측량가 시리즈 망각: 그어 둔 길을 *끝→시작점* 거꾸로 천천히 지운다 =====
      길 그리기(road)의 역(逆). 같은 경로(ROAD_PTS)가 처음부터 다 그어져 있고, 끝(🏙)부터 역순으로
      웨이포인트를 되짚으면 길이 한 칸씩 사라진다. 다 지우면 빈 종이 → 망각 seqKey 엔딩으로. */
   function eraseInit(){
