@@ -44,7 +44,7 @@ const $ = id => document.getElementById(id);
     setT("emberGauge",CUR.emberPrefix+"0%");
     setT("fwBtn",CUR.l8btn); fwShow();
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd")); setT("hubTitle",CUR.hubTitle);
-    setT("end-stay",CUR.endStay); setCoda();
+    setT("end-stay",endK("stay","endStay")); setCoda();
     setT("share-title",CUR.shareTitle); setT("share-body",CUR.shareBody);
     setT("shareBtn",CUR.shareBtn); setT("backHarborBtn",CUR.backToHarbor);
     setT("gatePrompt",CUR.gatePrompt); setT("gateYes",CUR.gateYes); setT("gateNo",CUR.gateNo);
@@ -121,6 +121,8 @@ const $ = id => document.getElementById(id);
       setT("l8-tag",CUR[t.tag]); setT("l8-hint",CUR[t.hint]); } },
     warm:     { init:warmInit, cleanup:warmStop, reset:warmReset, bind:(lv)=>{ const t=lv.text||{};
       setT("warm-tag",CUR[t.tag]); setT("warm-riddle",CUR[t.riddle]); setT("warm-hint",CUR[t.hint]); } },
+    road:     { init:roadInit, bind:(lv)=>{ const t=lv.text||{};
+      setT("road-tag",CUR[t.tag]); setT("road-riddle",CUR[t.riddle]); setT("road-hint",CUR[t.hint]); setT("road-reveal",CUR[t.reveal]); } },
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
@@ -179,6 +181,7 @@ const $ = id => document.getElementById(id);
     // 활성 시나리오 엔딩 카피 주입(허브로 시나리오가 바뀐 경우 대비)
     setT("done-title",endK("title","doneTitle")); setT("done-end",endK("end","doneEnd"));
     $("done-body").innerHTML = endK("body","doneBody"); setCoda();
+    setT("end-stay",endK("stay","endStay"));   // 시리즈별 잔류 라인(ending.stay) → 없으면 글로벌 폴백
     const e=RUN.scenario && RUN.scenario.ending;
     const seqArr = (e && e.seqKey && Array.isArray(CUR[e.seqKey])) ? CUR[e.seqKey] : null;
     const seqEl=$("endSeq");
@@ -286,6 +289,7 @@ const $ = id => document.getElementById(id);
   let revealAdv=false, revealTimer=null;   // L1/L3/L5 자동진행 — resetLevels보다 먼저 선언(TDZ 방지)
   let emberProg=0, emberTarget=0, emberCarry=false, emberDone=false, emberBound=false, emberRaf=null;  // 불씨 옮기기
   let emberTrackLeft=0, emberX0=0, emberX1=0;   // 두 등불 중심(트랙 기준 px)
+  let roadCanvas=null, roadCtx=null, roadPts=[], roadHit=0, roadStroke=[], roadDrawing=false, roadDone=false, roadBound=false;  // 길 그리기(기억)
   let warmFill=0, warmDone=false, warmHold=false, warmRaf=null, warmBox=null;
   let tiltGotEvent=false, tiltBound=false, tiltTimer=null;
   let fwStep=0, fwDone=false, fwBound=false, fwProgress=0, fwHold=false, fwRaf=null;
@@ -305,6 +309,7 @@ const $ = id => document.getElementById(id);
     rpReset();                                        // 나란히 젓기(새벽 강)
     foldReset();                                      // 종이배 접기(새벽 강)
     emberReset();                                     // 불씨 옮기기(등불 항구)
+    roadReset();                                      // 길 그리기(기억 시리즈)
     warmReset();                                      // 체온 나누기
     fwReset();                                         // L8 작별
     ["in1","in2","in3","in5"].forEach(id=>{ const e=$(id); if(e) e.value=""; });
@@ -515,6 +520,97 @@ const $ = id => document.getElementById(id);
       routeCtx.beginPath(); routeCtx.arc(sx,sy, s.hit?6:4, 0, 7);
       routeCtx.fillStyle = s.hit ? "#e3a542" : "#3a4663"; routeCtx.fill();
     });
+  }
+
+  /* ===== 길 그리기(road) — 기억 시리즈: 측량가가 도연에게 가는 동쪽 길을 *순서대로* 그린다 =====
+     route와 달리 웨이포인트를 처음→끝 순서로 통과해야 한다(길이니까). 마지막 점=도연. 완주 시
+     도연이 흐려지고(잊혀짐의 시작) #road-reveal(작별 약속)이 떠오른 뒤 느린-망각 엔딩으로. */
+  const ROAD_PTS = [
+    {x:0.10,y:0.80},{x:0.27,y:0.62},{x:0.43,y:0.68},
+    {x:0.60,y:0.46},{x:0.77,y:0.52},{x:0.90,y:0.30}
+  ];
+  function roadInit(){
+    if(!roadCanvas){
+      roadCanvas = $("roadCanvas");
+      roadCtx = roadCanvas.getContext("2d");
+      roadPts = ROAD_PTS.map(p=>({x:p.x,y:p.y}));
+      const down=e=>{ roadDrawing=true; roadAdd(e); };
+      const move=e=>{ if(roadDrawing){ e.preventDefault(); roadAdd(e); } };
+      const up=()=>{ roadDrawing=false; };
+      roadCanvas.addEventListener("pointerdown",down);
+      roadCanvas.addEventListener("pointermove",move);
+      roadCanvas.addEventListener("pointerup",up);
+      roadCanvas.addEventListener("pointerleave",up);
+      roadBound=true;
+    }
+    if(!roadPts.length) roadPts = ROAD_PTS.map(p=>({x:p.x,y:p.y}));
+    roadSize(); roadRender();
+  }
+  function roadSize(){
+    if(!roadCanvas) return;
+    roadCanvas.width = roadCanvas.clientWidth || 320;
+    roadCanvas.height = 220;
+  }
+  function roadAdd(e){
+    if(roadDone || !roadCanvas) return;
+    const r=roadCanvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    roadStroke.push({x,y});
+    // 순서대로: 다음 웨이포인트에 닿으면 한 칸 전진(길이니까 건너뛸 수 없다)
+    if(roadHit < roadPts.length){
+      const nx=roadPts[roadHit].x*roadCanvas.width, ny=roadPts[roadHit].y*roadCanvas.height;
+      if(Math.hypot(x-nx,y-ny) < 26){ roadHit++; haptic(12); }
+    }
+    roadRender();
+    if(roadHit >= roadPts.length) roadComplete();
+  }
+  function roadComplete(){
+    if(roadDone) return; roadDone=true; haptic([0,80,40,120]);
+    const rv=$("road-reveal"); if(rv) rv.classList.add("show");
+    roadRender();
+    revealAdvance();
+  }
+  function roadReset(){
+    roadStroke=[]; roadDone=false; roadHit=0;
+    const rv=$("road-reveal"); if(rv) rv.classList.remove("show");
+    roadRender();
+  }
+  function roadRender(){
+    if(!roadCtx || !roadCanvas) return;
+    const w=roadCanvas.width, h=roadCanvas.height;
+    roadCtx.clearRect(0,0,w,h);
+    // 그어진 길(따라간 만큼 황금빛)
+    if(roadStroke.length>1){
+      roadCtx.strokeStyle="rgba(227,165,66,.5)"; roadCtx.lineWidth=3;
+      roadCtx.lineCap="round"; roadCtx.lineJoin="round";
+      roadCtx.beginPath();
+      roadStroke.forEach((p,i)=> i ? roadCtx.lineTo(p.x,p.y) : roadCtx.moveTo(p.x,p.y));
+      roadCtx.stroke();
+    }
+    // 통과한 웨이포인트끼리 잇는 *길*의 윤곽(점선 → 통과분은 실선화)
+    roadCtx.lineWidth=2;
+    for(let i=0;i<roadPts.length-1;i++){
+      const a=roadPts[i], b=roadPts[i+1];
+      roadCtx.beginPath();
+      roadCtx.moveTo(a.x*w,a.y*h); roadCtx.lineTo(b.x*w,b.y*h);
+      roadCtx.strokeStyle = (i < roadHit-0) && (i+1 <= roadHit) ? "rgba(227,165,66,.35)" : "rgba(58,70,99,.5)";
+      roadCtx.stroke();
+    }
+    // 웨이포인트 점들
+    roadPts.forEach((p,i)=>{
+      const sx=p.x*w, sy=p.y*h, passed = i < roadHit;
+      roadCtx.beginPath(); roadCtx.arc(sx,sy, passed?6:4, 0, 7);
+      roadCtx.fillStyle = passed ? "#e3a542" : "#3a4663"; roadCtx.fill();
+    });
+    // 마지막 점 = 도연. 완주 전엔 또렷, 완주(작별) 후엔 흐려진다 — 잊혀짐의 시작.
+    const last=roadPts[roadPts.length-1];
+    if(last){
+      roadCtx.save();
+      roadCtx.globalAlpha = roadDone ? 0.32 : 1;
+      roadCtx.font = "20px serif"; roadCtx.textAlign="center"; roadCtx.textBaseline="middle";
+      roadCtx.fillText("🚶", last.x*w, last.y*h - 16);
+      roadCtx.restore();
+    }
   }
 
   /* ===== LEVEL 6 — 두 손가락 감싸기(등불 보살핌): 불씨를 양손으로 감싸 지킨다 ===== */

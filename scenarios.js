@@ -48,6 +48,16 @@ const SCENARIOS = {
     ],
     ending: { title:"lanternDoneTitle", body:"lanternDoneBody", end:"lanternDoneEnd", coda:"lanternCoda" },
   },
+  /* 동쪽 길의 작별 — 기억 시리즈 첫 항해(세진의 응어리=도연과의 작별). 새 트릭 '길 그리기' +
+     동의 비트(리들) + 긴 엔딩 seqKey(느린 망각) + 시리즈 잔류 라인(ending.stay). */
+  road_doyeon: {
+    id: "road_doyeon",
+    titleKey: "sc_road",
+    levels: [
+      { sec:"lvRoad", trick:"road", text:{ tag:"roadTag", riddle:"roadRiddle", hint:"roadHint", reveal:"roadReveal" } },
+    ],
+    ending: { title:"roadDoneTitle", body:"roadDoneBody", end:"roadDoneEnd", coda:"roadCoda", stay:"roadStay", seqKey:"roadSeq" },
+  },
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
 };
@@ -65,8 +75,8 @@ const SERIES = {
   memory: {
     id: "memory",
     titleKey: "seriesMemory",
-    scenarios: [],        // 곧 채워짐 — 측량가/기억 시리즈(MemoryGame 재구성)
+    scenarios: ["road_doyeon"],   // 측량가/기억 시리즈(MemoryGame 재구성). 캡스톤 단편은 항해 쌓인 뒤.
     story: null,
-    comingSoon: true,
+    comingSoon: false,
   },
 };
