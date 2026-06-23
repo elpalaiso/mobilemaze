@@ -334,7 +334,7 @@ const $ = id => document.getElementById(id);
     }
     accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStoriesCats);
     const tc=towerCleared();
-    accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total, renderTowerCats);
+    accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.total+" "+(CUR.floorUnit||"층"), renderTowerCats);
     accordionSoon(list,"✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧");
   }
   function accordion(list, key, icon, title, sub, renderFn){   // 갈래 헤더(접기/펼치기) + 펼치면 본문 인라인
@@ -350,12 +350,7 @@ const $ = id => document.getElementById(id);
     head.innerHTML='<span class="acc-chev">·</span> '+icon+" "+title+' <span class="hubcount story">'+sub+'</span>';
     list.appendChild(head);
   }
-  function seriesKnotProgress(series){   // 시리즈 매듭 진행(done/total)
-    let done=0,total=0;
-    (series.stories||[]).forEach(story=>{ const keys=story.knots?Object.keys(story.knots):[]; total+=keys.length;
-      done+=keys.filter(k=>{ const st=SAVE.scenarios[story.knots[k].scid]; return st&&st.cleared; }).length; });
-    return { done, total };
-  }
+  function seriesStoryCount(series){ return (series.stories||[]).filter(st=>CUR[st.textKey]).length; }   // 시리즈의 단편소설 편수
   function catRow(list, label, sub, onClick){   // 카테고리 행 — 탭하면 다음 페이지(상세)로
     const row=document.createElement("button"); row.className="hubcard catrow";
     row.innerHTML="• "+label+(sub?' <span class="hubcount">'+sub+'</span>':'')+' <span class="cat-arrow">›</span>';
@@ -365,8 +360,7 @@ const $ = id => document.getElementById(id);
   function renderStoriesCats(body){   // 이야기 펼침 → 시리즈 카테고리(뱃사공·측량가)
     Object.values(SERIES).forEach(series=>{
       if(series.quiz) return;
-      const p=seriesKnotProgress(series);
-      catRow(body, CUR[series.titleKey]||series.id, p.total?p.done+" / "+p.total:"", ()=>{ hubDetail={kind:"series", series:series.id}; buildHub(); });
+      catRow(body, CUR[series.titleKey]||series.id, seriesStoryCount(series)+" "+(CUR.storyUnit||"편"), ()=>{ hubDetail={kind:"series", series:series.id}; buildHub(); });
     });
   }
   function renderTowerCats(body){   // 타워 펼침 → 층 그룹 카테고리(1층)
