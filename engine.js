@@ -423,7 +423,12 @@ const $ = id => document.getElementById(id);
   let dailySel=null;                                  // 선택된 별자리 key(null=그리드)
   let dCanvas=null, dCtx=null, dStars=[], dPaths=null, dStroke=[], dDrawing=false, dLit=false;
   function dailyLang(){ return (SAVE.lang==="en") ? "en" : "ko"; }
-  function getDaily(){ return (typeof DAILY_SEED!=="undefined") ? DAILY_SEED : { date:"", readings:{} }; }   // Phase2: fetch JSON으로 대체
+  function dailyDateStr(){ const d=new Date(), p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+  function getDaily(){ const base=(typeof DAILY_SEED!=="undefined")?DAILY_SEED:{readings:{}}; return { date:dailyDateStr(), readings:base.readings||{} }; }   // 날짜는 매일 라이브
+  let _skyCache=null, _skyDay=null;
+  function currentSky(){ const k=dailyDateStr(); if(_skyCache&&_skyDay===k) return _skyCache;   // 하루 1회 계산 캐시
+    _skyCache=(typeof SKY!=="undefined")?SKY.compute(new Date()):null; _skyDay=k; return _skyCache; }
+  function skyLinesFor(key){ return (typeof skyLines!=="undefined")?skyLines(currentSky(), key, dailyLang()):null; }
   function zodiacList(){ return (typeof ZODIAC!=="undefined") ? ZODIAC : []; }
   function openDaily(){ dailySel=null; showView("daily"); dailyRender(); }
   function dailyRender(){ if(dailySel) dailySign(dailySel); else dailyGrid(); }
@@ -434,6 +439,10 @@ const $ = id => document.getElementById(id);
     const back=document.createElement("button"); back.className="hubcard hub-back"; back.textContent="← "+(CUR.hubTitle||"길목");
     back.addEventListener("click",()=>{ goHub(); }); list.appendChild(back);
     const dt=document.createElement("div"); dt.className="daily-date"; dt.textContent=getDaily().date||""; list.appendChild(dt);
+    const sky0=currentSky();   // 오늘 밤의 달 — 별자리와 무관, 그리드 상단에 한 줄
+    if(sky0){ const t=(typeof SKY_TEXT!=="undefined")?(SKY_TEXT[dailyLang()]||SKY_TEXT.ko):null;
+      if(t){ const ml=document.createElement("div"); ml.className="sky-moon";
+        ml.textContent="☽ "+t.moonLine(t.phase[sky0.moon.phase]||"", sky0.moon.illumPct, t.signs[sky0.moon.sign]||""); list.appendChild(ml); } }
     const grid=document.createElement("div"); grid.className="zodiac-grid"; const lang=dailyLang();
     zodiacList().forEach(z=>{
       const meta=z[lang]||z.ko;
@@ -448,7 +457,9 @@ const $ = id => document.getElementById(id);
     dailyStop();
     const z=zodiacList().find(x=>x.key===key); if(!z){ dailySel=null; return dailyGrid(); }
     const lang=dailyLang(), meta=z[lang]||z.ko, d=getDaily();
-    const r=(d.readings[key] && (d.readings[key][lang]||d.readings[key].ko)) || { teaser:"", body:[] };
+    const r=(typeof BODYGEN!=="undefined")
+      ? BODYGEN.composeBody(currentSky(), key, dailyDateStr(), lang)                          // 완전 동적 본문(오늘 하늘 + 날짜 시드)
+      : ((d.readings[key] && (d.readings[key][lang]||d.readings[key].ko)) || { teaser:"", body:[] });  // 폴백: 정적 시드
     setT("dailyTitle", meta.name||key);
     const list=$("dailyList"); if(!list) return; list.innerHTML="";
     const back=document.createElement("button"); back.className="hubcard hub-back"; back.textContent="← "+(CUR.dailyTitle||"오늘의 별자리");
@@ -460,6 +471,13 @@ const $ = id => document.getElementById(id);
     const dateEl=document.createElement("div"); dateEl.className="daily-date"; dateEl.textContent=d.date||""; card.appendChild(dateEl);
     dCanvas=document.createElement("canvas"); dCanvas.className="sign-canvas deco"; card.appendChild(dCanvas);
     dStars=z.stars.map(p=>({x:p.x,y:p.y})); dPaths=z.paths||null; dailyDrawConstellation();
+    // ☽ 오늘의 하늘 / ✦ 별의 자리 — 매일 계산되는 실제 하늘 2줄
+    const sky=skyLinesFor(key);
+    if(sky){ const sw=document.createElement("div"); sw.className="sky-lines";
+      const mk=(ico,txt)=>{ const row=document.createElement("div"); row.className="sky-line";
+        const i=document.createElement("span"); i.className="sky-ico"; i.textContent=ico; const s=document.createElement("span"); s.textContent=txt;
+        row.appendChild(i); row.appendChild(s); return row; };
+      sw.appendChild(mk("☽", sky.sky)); sw.appendChild(mk("✦", sky.seat)); card.appendChild(sw); }
     if(r.teaser){ const t=document.createElement("div"); t.className="sign-teaser"; t.textContent=r.teaser; card.appendChild(t); }
     const bodyWrap=document.createElement("div"); bodyWrap.className="sign-body"; card.appendChild(bodyWrap);
     const lines=Array.isArray(r.body)?r.body:(r.body?[r.body]:[]);   // 본문 array(권장) 또는 string 허용
@@ -499,7 +517,8 @@ const $ = id => document.getElementById(id);
   function dailyShare(z, meta, r){
     const d=getDaily();
     const bodyTxt=Array.isArray(r.body)?r.body.join("\n"):(r.body||"");
-    const text=(meta.name||z.key)+" · "+(d.date||"")+"\n"+(r.teaser||"")+"\n\n"+bodyTxt+"\n— "+(CUR.title||"Yonderkeep");
+    const sky=skyLinesFor(z.key); const skyTxt=sky?("☽ "+sky.sky+"\n✦ "+sky.seat+"\n"):"";
+    const text=(meta.name||z.key)+" · "+(d.date||"")+"\n"+skyTxt+(r.teaser?r.teaser+"\n":"")+"\n"+bodyTxt+"\n— "+(CUR.title||"Yonderkeep");
     const url=location.href.split("#")[0];
     (async()=>{
       try{ if(navigator.share){ await navigator.share({ text, url }); return; } }catch(e){ return; }
@@ -524,16 +543,21 @@ const $ = id => document.getElementById(id);
     const W=1080, pad=90, innerW=W-2*pad, cx=W/2;
     const FAM="'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
     const fGlyph="140px "+FAM, fName="600 60px "+FAM, fSub="30px "+FAM,
-          fTease="italic 40px "+FAM, fBody="38px "+FAM, fFoot="600 30px "+FAM;
+          fTease="italic 40px "+FAM, fBody="38px "+FAM, fFoot="600 30px "+FAM, fSky="32px "+FAM;
     const accent="#f0c56b", ink="#d3dbea", muted="#7f8aa0";
     const d=getDaily();
     const mc=document.createElement("canvas").getContext("2d");
     mc.font=fTease; const teaseLines=r.teaser?wrapLines(mc,r.teaser,innerW*0.92):[];
+    const sky=(typeof skyLinesFor!=="undefined")?skyLinesFor(z.key):null;   // ☽/✦ 실제 하늘 2줄
+    let skyBlocks=[]; if(sky){ mc.font=fSky; skyBlocks=[wrapLines(mc,"☽ "+sky.sky,innerW), wrapLines(mc,"✦ "+sky.seat,innerW)]; }
     let bodyBlocks=[];
     if(full){ mc.font=fBody; const sents=Array.isArray(r.body)?r.body:(r.body?[r.body]:[]); bodyBlocks=sents.map(s=>wrapLines(mc,s,innerW)); }
     const top=92, glyphH=148, nameH=80, subH=58, constTop=22, constH=356, constBot=30;
     const teaseLH=56, bodyLH=62, sentGap=16, footTop=42, footH=46, bottom=74;
+    const skyLH=44, skyGap=10, skyTop=10, skyBot=16;
     let h=top+glyphH+nameH+subH+constTop+constH+constBot;
+    let skyH=0; if(skyBlocks.length){ skyH=skyTop; skyBlocks.forEach((b,i)=>{ skyH+=b.length*skyLH; if(i<skyBlocks.length-1) skyH+=skyGap; }); skyH+=skyBot; }
+    h+=skyH;
     const teaseBlockH = teaseLines.length ? (16+teaseLines.length*teaseLH+(full?20:26)) : (full?10:18);
     h+=teaseBlockH;
     let dividerH=0, bodyH=0;
@@ -550,6 +574,8 @@ const $ = id => document.getElementById(id);
     ctx.font=fName; ctx.fillStyle=ink; ctx.fillText(meta.name||z.key, cx, y+58); y+=nameH;
     ctx.font=fSub; ctx.fillStyle=muted; ctx.fillText((meta.dates||"")+"   ·   "+(d.date||""), cx, y+34); y+=subH;
     y+=constTop; drawConstel(ctx, z.stars, z.paths||null, cx-(innerW*0.86)/2, y, innerW*0.86, constH, {lw:2.5, halo:15, dot:6, line:"rgba(240,197,107,.6)", haloC:"rgba(240,197,107,.18)", dotC:"#f3cd78"}); y+=constH+constBot;
+    if(skyBlocks.length){ y+=skyTop; ctx.font=fSky; ctx.fillStyle="#aab4ca";
+      skyBlocks.forEach((b,i)=>{ b.forEach(ln=>{ ctx.fillText(ln, cx, y+32); y+=skyLH; }); if(i<skyBlocks.length-1) y+=skyGap; }); y+=skyBot; }
     if(teaseLines.length){ y+=16; ctx.font=fTease; ctx.fillStyle=accent; teaseLines.forEach(ln=>{ ctx.fillText(ln, cx, y+40); y+=teaseLH; }); y+=(full?20:26); }
     else y+=(full?10:18);
     if(full){ ctx.strokeStyle="rgba(240,197,107,.25)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx-60,y+12); ctx.lineTo(cx+60,y+12); ctx.stroke(); y+=45;

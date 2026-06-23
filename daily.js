@@ -302,6 +302,7 @@ const DAILY_SEED = {
         "Time alone recharges you; it isn't loneliness.",
         "Today, say one small idea out loud, lightly.",
         "Before sleep, be glad for a day when you never erased yourself." ] } },
+    /* pisces 아래에 sky 표시 데이터가 이어짐(파일 끝) */
     pisces: {
       ko:{ teaser:"흐릿하던 마음에 윤곽이 잡힌다.", body:[
         "오늘 당신의 별은 흐릿하던 마음에 윤곽을 그려줍니다.",
@@ -327,3 +328,48 @@ const DAILY_SEED = {
         "Before sleep, don't call your softness a weakness." ] } },
   },
 };
+
+/* ===== 오늘의 하늘 — sky.js 계산값 → 표시 문자열(☽/✦ 2줄, ko/en) =====
+   전통 지배성(고전 7천체). 천왕/해왕/명왕 대신 토성·목성·화성으로 귀속 → 표시 천체 7개로 통일. */
+const ZODIAC_RULERS = {
+  aries:"mars", taurus:"venus", gemini:"mercury", cancer:"moon", leo:"sun", virgo:"mercury",
+  libra:"venus", scorpio:"mars", sagittarius:"jupiter", capricorn:"saturn", aquarius:"saturn", pisces:"jupiter"
+};
+const SKY_TEXT = {
+  ko:{
+    bodies:{ sun:"태양", moon:"달", mercury:"수성", venus:"금성", mars:"화성", jupiter:"목성", saturn:"토성" },
+    signs:{ aries:"양자리", taurus:"황소자리", gemini:"쌍둥이자리", cancer:"게자리", leo:"사자자리", virgo:"처녀자리",
+            libra:"천칭자리", scorpio:"전갈자리", sagittarius:"궁수자리", capricorn:"염소자리", aquarius:"물병자리", pisces:"물고기자리" },
+    phase:{ new:"새로 뜨는 달", waxingCrescent:"차오르는 초승달", firstQuarter:"상현달", waxingGibbous:"차오르는 달",
+            full:"보름달", waningGibbous:"이지러지는 달", lastQuarter:"하현달", waningCrescent:"그믐으로 지는 달" },
+    // 모든 천체 이름이 받침으로 끝나 주격 '이' / 주제격 '은' 으로 통일.
+    moonLine:(ph,pct,sign)=> ph+" "+pct+"% · "+sign+"에 머무는 밤",
+    seatVisitors:(list)=> list.join("·")+"이 당신의 자리에 머무는 날이에요.",
+    seatQuiet:"오늘은 당신의 자리가 고요해요.",
+    rulerHome:(ruler)=> " 수호별 "+ruler+"이 바로 당신의 자리에 깃든 날이에요.",
+    rulerAway:(ruler,sign)=> " 수호별 "+ruler+"은 "+sign+"에서 당신을 비춰요."
+  },
+  en:{
+    bodies:{ sun:"the Sun", moon:"the Moon", mercury:"Mercury", venus:"Venus", mars:"Mars", jupiter:"Jupiter", saturn:"Saturn" },
+    signs:{ aries:"Aries", taurus:"Taurus", gemini:"Gemini", cancer:"Cancer", leo:"Leo", virgo:"Virgo",
+            libra:"Libra", scorpio:"Scorpio", sagittarius:"Sagittarius", capricorn:"Capricorn", aquarius:"Aquarius", pisces:"Pisces" },
+    phase:{ new:"New moon", waxingCrescent:"Waxing crescent", firstQuarter:"First quarter", waxingGibbous:"Waxing gibbous",
+            full:"Full moon", waningGibbous:"Waning gibbous", lastQuarter:"Last quarter", waningCrescent:"Waning crescent" },
+    moonLine:(ph,pct,sign)=> ph+" "+pct+"% · resting in "+sign,
+    seatVisitors:(list)=>{ let s; if(list.length===1) s=list[0]+" rests in your sign today.";
+      else s=list.slice(0,-1).join(", ")+" & "+list[list.length-1]+" share your sign today."; return s.charAt(0).toUpperCase()+s.slice(1); },
+    seatQuiet:"Your sign is quiet tonight.",
+    rulerHome:(ruler)=> " Your ruling star, "+ruler+", is home in your sign today.",
+    rulerAway:(ruler,sign)=> " Your ruling star, "+ruler+", watches over you from "+sign+"."
+  }
+};
+/* sky.js 결과 + 별자리 key + 언어 → { sky:"☽ ...", seat:"✦ ..." } 두 줄 텍스트(글리프 제외, 본문만). */
+function skyLines(sky, key, lang){
+  const t=SKY_TEXT[lang]||SKY_TEXT.ko; if(!sky||!sky.moon) return null;
+  const skyLine=t.moonLine(t.phase[sky.moon.phase]||"", sky.moon.illumPct, t.signs[sky.moon.sign]||"");
+  const visitors=(sky.bySign[key]||[]).map(b=>t.bodies[b]);
+  const ruler=ZODIAC_RULERS[key], rulerSign=sky.signs[ruler];
+  const head=visitors.length ? t.seatVisitors(visitors) : t.seatQuiet;
+  const tail=(rulerSign===key) ? t.rulerHome(t.bodies[ruler]) : t.rulerAway(t.bodies[ruler], t.signs[rulerSign]);
+  return { sky:skyLine, seat:head+tail };
+}
