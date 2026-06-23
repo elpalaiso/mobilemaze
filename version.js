@@ -1,1 +1,1 @@
-(function(){ var b=document.getElementById('build'); if(b) b.textContent='build daily-stars-refs-final · 06-24 01:50'; })()
+(function(){ var b=document.getElementById('build'); if(b) b.textContent='build daily-horoscope-en-qa · 06-24 02:12'; })()
