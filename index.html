@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>건너편 · Yonderkeep</title>
-<link rel="stylesheet" href="styles.css?v=06231651" />
+<link rel="stylesheet" href="styles.css?v=06231700" />
 </head>
 <body>
 <div class="wrap">
@@ -140,6 +140,18 @@
     </div>
     <div id="star-reveal"></div>
     <div class="hint" id="star-hint"></div>
+  </section>
+
+  <!-- A3 : 톱니(Cogwork) — 두 손가락으로 비틀어 다이얼 맞추기 -->
+  <section class="level" id="lvDial">
+    <div class="tag" id="dial-tag"></div>
+    <div class="riddle" id="dial-riddle"></div>
+    <div class="tightrope">
+      <canvas id="dialCanvas"></canvas>
+      <div class="gauge" id="dialGauge"></div>
+    </div>
+    <div id="dial-reveal"></div>
+    <div class="hint" id="dial-hint"></div>
   </section>
 
   <!-- LEVEL 6 : 두 손가락 감싸기(등불 보살핌) — 2막 안개 -->
@@ -298,9 +310,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=06231651"></script>
-<script src="scenarios.js?v=06231651"></script>
-<script src="engine.js?v=06231651"></script>
-<script src="version.js?v=06231651"></script>
+<script src="levels.js?v=06231700"></script>
+<script src="scenarios.js?v=06231700"></script>
+<script src="engine.js?v=06231700"></script>
+<script src="version.js?v=06231700"></script>
 </body>
 </html>

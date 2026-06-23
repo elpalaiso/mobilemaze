@@ -125,6 +125,9 @@ const $ = id => document.getElementById(id);
     stardust: { init:stardustInit, cleanup:stardustCleanup, reset:stardustReset, bind:(lv)=>{ const t=lv.text||{};
       starLevel=lv; stardustReset(); setT("star-tag",CUR[t.tag]); setT("star-riddle",CUR[t.riddle]); setT("star-hint",CUR[t.hint]);
       setT("starShakeBtn",CUR.starShakeBtn); setT("starShakeFb",CUR.starShakeFb); setT("starGauge",CUR.starPrefix+"0%"); setT("star-reveal",CUR[t.reveal]); } },
+    twist:    { init:twistInit, cleanup:twistCleanup, reset:twistReset, bind:(lv)=>{ const t=lv.text||{};
+      twistReset(); setT("dial-tag",CUR[t.tag]); setT("dial-riddle",CUR[t.riddle]); setT("dial-hint",CUR[t.hint]);
+      setT("dialGauge",CUR.dialPrefix+"0%"); setT("dial-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -391,6 +394,8 @@ const $ = id => document.getElementById(id);
   const STAR_SHAKE_NEED = 6;     // A2 수렴까지 필요한 흔들기 누적 — 키우면 더 많이 흔들어야(빡셈)
   const STAR_HIT_R = 24;         // A2 별 잇기 인식 반경(px)
   const STAR_SCATTER = 0.42;     // A2 초기 산포 — stardustReset(init)가 읽으므로 반드시 resetLevels보다 먼저(TDZ)
+  let dialCanvas=null, dialCtx=null, dialAngle=0, dialTarget=0, dialHoldMs=0, dialDone=false, dialRaf=null, dialBound=false, dialListeners=[], dialPtrs=new Map(), dialLastAng=null, dialLastTs=0;  // A3 톱니(twist)
+  const TWIST_TARGET=140, TWIST_TOL=12, TWIST_HOLD_MS=800;  // A3 — twistReset(init)가 TWIST_TARGET 읽음 → 상단(TDZ 방지)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -418,6 +423,7 @@ const $ = id => document.getElementById(id);
     holdfastReset();                                  // A4
     tightropeReset();                                 // A6
     stardustReset();                                  // A2
+    twistReset();                                     // A3
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
@@ -1077,6 +1083,76 @@ const $ = id => document.getElementById(id);
       starCtx.beginPath(); starCtx.arc(sx,sy, s.hit?6:(starConverged?5:3), 0, 7);
       starCtx.fillStyle = s.hit ? "#e3a542" : (starConverged ? "#f0c56b" : "#3a4663"); starCtx.fill();
     });
+  }
+
+  /* ===== A3 — 톱니(Cogwork): 두 손가락으로 비틀어 다이얼을 목표 각도에 맞춰 유지(회전 협응) ===== */
+  function twistInit(){
+    dialCanvas=$("dialCanvas"); if(!dialCanvas) return;
+    dialCtx=dialCanvas.getContext("2d");
+    if(!dialBound){
+      const on=(el,t,fn,opt)=>{ el.addEventListener(t,fn,opt); dialListeners.push([el,t,fn,opt]); };
+      on(dialCanvas,"pointerdown",twistDown);
+      on(dialCanvas,"pointermove",twistMove);
+      on(dialCanvas,"pointerup",twistUp); on(dialCanvas,"pointercancel",twistUp); on(dialCanvas,"pointerleave",twistUp);
+      dialBound=true;
+    }
+    twistSize(); twistRender(); twistStop(); dialLastTs=0; dialRaf=requestAnimationFrame(twistLoop);
+  }
+  function twistStop(){ if(dialRaf){ cancelAnimationFrame(dialRaf); dialRaf=null; } }
+  function twistCleanup(){ twistStop(); dialListeners.forEach(([el,t,fn,o])=>el.removeEventListener(t,fn,o)); dialListeners=[]; dialBound=false; dialPtrs.clear(); }
+  function twistSize(){ if(!dialCanvas) return; dialCanvas.width=dialCanvas.clientWidth||320; dialCanvas.height=230; }
+  function twistPt(e){ const r=dialCanvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  function twistInputAngle(){
+    const pts=[...dialPtrs.values()];
+    if(pts.length>=2) return Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x)*180/Math.PI;   // 두 손가락 사이 각(회전)
+    if(pts.length===1) return Math.atan2(pts[0].y-dialCanvas.height/2, pts[0].x-dialCanvas.width/2)*180/Math.PI;  // 폴백: 중심 기준 호
+    return null;
+  }
+  function twistDown(e){ if(dialDone) return; try{ dialCanvas.setPointerCapture(e.pointerId); }catch(_){} dialPtrs.set(e.pointerId, twistPt(e)); dialLastAng=twistInputAngle(); }
+  function twistMove(e){
+    if(dialDone || !dialPtrs.has(e.pointerId)) return; e.preventDefault();
+    dialPtrs.set(e.pointerId, twistPt(e));
+    const a=twistInputAngle();
+    if(a!=null && dialLastAng!=null){ let d=a-dialLastAng; while(d>180)d-=360; while(d<-180)d+=360; dialAngle+=d; }
+    dialLastAng=a; twistRender();
+  }
+  function twistUp(e){ dialPtrs.delete(e.pointerId); dialLastAng = dialPtrs.size ? twistInputAngle() : null; }
+  function twistLoop(ts){
+    if(!dialCanvas || dialDone) return;
+    const dt=Math.min(34, dialLastTs ? ts-dialLastTs : 16); dialLastTs=ts;
+    const diff=Math.abs(((dialAngle-dialTarget)%360+540)%360-180);   // 0~180 최소 각차
+    if(diff<=TWIST_TOL) dialHoldMs+=dt; else dialHoldMs=Math.max(0,dialHoldMs-dt*1.5);
+    if(dialHoldMs>=TWIST_HOLD_MS) twistComplete();
+    twistRender();
+    dialRaf=requestAnimationFrame(twistLoop);
+  }
+  function twistComplete(){
+    if(dialDone) return; dialDone=true; haptic([0,80,40,120]);
+    const rv=$("dial-reveal"); if(rv) rv.classList.add("show");
+    const g=$("dialGauge"); if(g){ g.textContent=CUR.ropeSet||""; g.classList.add("done"); }
+    twistStop(); twistRender(); revealAdvance();
+  }
+  function twistReset(){
+    twistStop();
+    dialAngle=0; dialTarget=TWIST_TARGET; dialHoldMs=0; dialDone=false; dialPtrs.clear(); dialLastAng=null; dialLastTs=0;
+    const rv=$("dial-reveal"); if(rv) rv.classList.remove("show");
+    const g=$("dialGauge"); if(g){ g.classList.remove("done"); g.textContent=CUR.dialPrefix+"0%"; }
+    twistRender();
+  }
+  function twistRender(){
+    if(!dialCtx || !dialCanvas) return;
+    const w=dialCanvas.width, h=dialCanvas.height, cx=w/2, cy=h/2, R=Math.min(w,h)*0.36;
+    dialCtx.clearRect(0,0,w,h);
+    dialCtx.beginPath(); dialCtx.arc(cx,cy,R,0,7); dialCtx.strokeStyle="rgba(227,165,66,.30)"; dialCtx.lineWidth=6; dialCtx.stroke();
+    const tr=(dialTarget-90)*Math.PI/180;
+    dialCtx.beginPath(); dialCtx.moveTo(cx+Math.cos(tr)*(R-14), cy+Math.sin(tr)*(R-14)); dialCtx.lineTo(cx+Math.cos(tr)*(R+10), cy+Math.sin(tr)*(R+10));
+    dialCtx.strokeStyle="rgba(240,197,107,.9)"; dialCtx.lineWidth=4; dialCtx.stroke();
+    const ar=(dialAngle-90)*Math.PI/180;
+    const diff=Math.abs(((dialAngle-dialTarget)%360+540)%360-180);
+    dialCtx.beginPath(); dialCtx.moveTo(cx,cy); dialCtx.lineTo(cx+Math.cos(ar)*(R-6), cy+Math.sin(ar)*(R-6));
+    dialCtx.strokeStyle = diff<=TWIST_TOL ? "#f0c56b" : "#bf5830"; dialCtx.lineWidth=4; dialCtx.lineCap="round"; dialCtx.stroke();
+    dialCtx.beginPath(); dialCtx.arc(cx,cy,7,0,7); dialCtx.fillStyle="#e3a542"; dialCtx.fill();
+    const g=$("dialGauge"); if(g && !dialDone) g.textContent=CUR.dialPrefix+Math.round(Math.min(100,dialHoldMs/TWIST_HOLD_MS*100))+"%";
   }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
