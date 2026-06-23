@@ -1,0 +1,18 @@
+{
+  "name": "pipeline",
+  "version": "1.0.0",
+  "description": "Daily horoscope v2 sky-fact and prompt pipeline for Yonderkeep.",
+  "main": "sky.js",
+  "scripts": {
+    "sky": "node sky.js",
+    "prompt": "node prompt.js",
+    "check": "node --check sky.js && node --check prompt.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19"
+  }
+}
