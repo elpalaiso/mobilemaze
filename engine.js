@@ -298,6 +298,7 @@ const $ = id => document.getElementById(id);
     if(at>=0 && ids.slice(at+1).some(id=>{ const st=SAVE.scenarios[id]; return st && (st.cleared || st.step>0); })) return true;
     return !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
   let hubOpen=null;   // 길목 아코디언 — 세션 동안 갈래 펼침 상태 {stories,tower,daily}; null=초기화 전
+  let hubDetail=null; // 상세 페이지: null=랜딩 / {kind:"series"|"group", series, group} = 카테고리 하위항목 페이지
   function hubCard(sc, series){   // 항구 카드 1개(퀴즈=타워카드 / 일반=촛불카드)
     const st=SAVE.scenarios[sc.id]||{};
     const card=document.createElement("button"); card.className="hubcard";
@@ -320,8 +321,9 @@ const $ = id => document.getElementById(id);
   function storyCount(){ let n=0; Object.values(SERIES).forEach(s=>{ if(s.quiz) return; (s.stories||[]).forEach(st=>{ if(CUR[st.textKey]) n++; }); }); return n; }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
-    setT("hubTitle", CUR.hubTitle);
     list.innerHTML="";
+    if(hubDetail){ renderDetail(list); return; }   // 카테고리 상세 페이지(다음 페이지)
+    setT("hubTitle", CUR.hubTitle);
     if(!hubOpen) hubOpen={ stories:false, tower:!!towerResume(), daily:false };   // 초기: 진행 중 타워만 자동 펼침(옵션 B)
     const r=towerResume();   // 히어로 — 이어하기(타워 진행 중일 때만)
     if(r){
@@ -330,9 +332,9 @@ const $ = id => document.getElementById(id);
       rc.addEventListener("click",()=>{ startScenario(r.id); showView("play"); });
       list.appendChild(rc);
     }
-    accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStories);
+    accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStoriesCats);
     const tc=towerCleared();
-    accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total, renderTower);
+    accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total, renderTowerCats);
     accordionSoon(list,"✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧");
   }
   function accordion(list, key, icon, title, sub, renderFn){   // 갈래 헤더(접기/펼치기) + 펼치면 본문 인라인
@@ -348,45 +350,77 @@ const $ = id => document.getElementById(id);
     head.innerHTML='<span class="acc-chev">·</span> '+icon+" "+title+' <span class="hubcount story">'+sub+'</span>';
     list.appendChild(head);
   }
-  function renderTower(list){
-    Object.values(SERIES).forEach(series=>{
-      if(!series.quiz) return;
-      const ids=series.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
-      const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
-      const groups = series.groups || [{ scenarios: ids }];   // 2단 계층: (층) 그룹 헤더 + 하위 층 카드들
-      groups.forEach(g=>{
-        if(g.titleKey){ const gh=document.createElement("div"); gh.className="tower-group-head"; gh.textContent=CUR[g.titleKey]||g.titleKey; list.appendChild(gh); }
-        (g.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(!sc) return; const card=hubCard(sc, series); if(g.titleKey) card.classList.add("tower-sub"); list.appendChild(card); });
-      });
-    });
+  function seriesKnotProgress(series){   // 시리즈 매듭 진행(done/total)
+    let done=0,total=0;
+    (series.stories||[]).forEach(story=>{ const keys=story.knots?Object.keys(story.knots):[]; total+=keys.length;
+      done+=keys.filter(k=>{ const st=SAVE.scenarios[story.knots[k].scid]; return st&&st.cleared; }).length; });
+    return { done, total };
   }
-  function renderStories(list){
+  function catRow(list, label, sub, onClick){   // 카테고리 행 — 탭하면 다음 페이지(상세)로
+    const row=document.createElement("button"); row.className="hubcard catrow";
+    row.innerHTML="• "+label+(sub?' <span class="hubcount">'+sub+'</span>':'')+' <span class="cat-arrow">›</span>';
+    row.addEventListener("click", onClick);
+    list.appendChild(row);
+  }
+  function renderStoriesCats(body){   // 이야기 펼침 → 시리즈 카테고리(뱃사공·측량가)
     Object.values(SERIES).forEach(series=>{
       if(series.quiz) return;
-      const head=document.createElement("div"); head.className="series-head"; head.textContent=CUR[series.titleKey]||series.id; list.appendChild(head);
-      (series.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(hubCard(sc, series)); });
-      (series.stories||[]).forEach((story, si)=>{
-        if(!CUR[story.textKey]) return;
-        const keys = story.knots ? Object.keys(story.knots) : [];
-        const knotsDone = keys.filter(k=>{ const st=SAVE.scenarios[story.knots[k].scid]; return st && st.cleared; }).length;
-        const book=document.createElement("button"); book.className="hubcard bookcard";
-        book.innerHTML="📖 "+(CUR[story.titleKey]||"")+' <span class="hubcount story">'+(CUR[story.tagKey]||"")+'</span>'+
-          (keys.length?' <span class="hubcount'+(knotsDone>=keys.length?' full':'')+'">('+knotsDone+'/'+keys.length+')</span>':'');
-        book.addEventListener("click",()=>openBook(series.id, si));
-        list.appendChild(book);
-        keys.forEach(key=>{
-          const k=story.knots[key], sc=SCENARIOS[k.scid]; if(!sc) return;
-          const c=knotCount(k.scid);
-          const sub=document.createElement("button"); sub.className="hubcard knotsub";
-          sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+(CUR[k.label]||key)+
-            ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
-          sub.addEventListener("click",()=>openKnot(k.scid, story));   // 허브서 실행해도 끝나면 소설로 복귀
-          list.appendChild(sub);
-        });
+      const p=seriesKnotProgress(series);
+      catRow(body, CUR[series.titleKey]||series.id, p.total?p.done+" / "+p.total:"", ()=>{ hubDetail={kind:"series", series:series.id}; buildHub(); });
+    });
+  }
+  function renderTowerCats(body){   // 타워 펼침 → 층 그룹 카테고리(1층)
+    const t=SERIES.tower; if(!t) return;
+    const groups=t.groups||[{ titleKey:null, scenarios:t.scenarios||[] }];
+    groups.forEach((g, gi)=>{
+      const ids=g.scenarios||[], done=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
+      catRow(body, CUR[g.titleKey]||(CUR.pathTower||"퀴즈 타워"), done+" / "+ids.length, ()=>{ hubDetail={kind:"group", series:"tower", group:gi}; buildHub(); });
+    });
+  }
+  function renderDetail(list){   // 카테고리 상세(다음 페이지) + 뒤로
+    const b=document.createElement("button"); b.className="hubcard hub-back"; b.textContent="← "+(CUR.hubTitle||"길목");
+    b.addEventListener("click",()=>{ hubDetail=null; buildHub(); });
+    list.appendChild(b);
+    if(hubDetail.kind==="series"){
+      const series=SERIES[hubDetail.series]; if(!series){ hubDetail=null; return buildHub(); }
+      setT("hubTitle", CUR[series.titleKey]||series.id);
+      renderSeriesBody(list, series);
+    } else if(hubDetail.kind==="group"){
+      const series=SERIES[hubDetail.series], g=((series&&series.groups)||[])[hubDetail.group];
+      if(!series||!g){ hubDetail=null; return buildHub(); }
+      setT("hubTitle", CUR[g.titleKey]||(CUR.pathTower||"퀴즈 타워"));
+      renderGroupBody(list, series, g);
+    }
+  }
+  function renderSeriesBody(list, series){   // 시리즈 하위: 단편(📖) + 매듭(└)
+    (series.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(hubCard(sc, series)); });
+    (series.stories||[]).forEach((story, si)=>{
+      if(!CUR[story.textKey]) return;
+      const keys = story.knots ? Object.keys(story.knots) : [];
+      const knotsDone = keys.filter(k=>{ const st=SAVE.scenarios[story.knots[k].scid]; return st && st.cleared; }).length;
+      const book=document.createElement("button"); book.className="hubcard bookcard";
+      book.innerHTML="📖 "+(CUR[story.titleKey]||"")+' <span class="hubcount story">'+(CUR[story.tagKey]||"")+'</span>'+
+        (keys.length?' <span class="hubcount'+(knotsDone>=keys.length?' full':'')+'">('+knotsDone+'/'+keys.length+')</span>':'');
+      book.addEventListener("click",()=>openBook(series.id, si));
+      list.appendChild(book);
+      keys.forEach(key=>{
+        const k=story.knots[key], sc=SCENARIOS[k.scid]; if(!sc) return;
+        const c=knotCount(k.scid);
+        const sub=document.createElement("button"); sub.className="hubcard knotsub";
+        sub.innerHTML='<span class="knotbranch">└</span> '+(c.cleared?"✓ ":"")+(CUR[k.label]||key)+
+          ' <span class="hubcount'+(c.done>=c.total?' full':'')+'">('+c.done+'/'+c.total+')</span>';
+        sub.addEventListener("click",()=>openKnot(k.scid, story));
+        list.appendChild(sub);
       });
     });
   }
-  function goHub(){ buildHub(); showView("hub"); }   // 어디서든 길목으로(아코디언 펼침 상태는 세션 유지)
+  function renderGroupBody(list, series, g){   // 층 그룹 하위: 진행 + 층 카드(1-1…1-7)
+    const ids=g.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
+    const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
+    ids.forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(hubCard(sc, series)); });
+  }
+  function goHub(){ hubDetail=null; buildHub(); showView("hub"); }      // 메뉴/처음 → 길목 랜딩(상세 닫음)
+  function returnHub(){ buildHub(); showView("hub"); }                  // 책/엔딩 복귀 → 현재 위치 유지(상세면 거기로)
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
     const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
@@ -547,7 +581,7 @@ const $ = id => document.getElementById(id);
   });
   $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); openBook("boatman",0); });   // 「손을 배우는 밤」부터(튜토리얼 매듭 포함)
   $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); goHub(); });
-  { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ goHub(); }); }
+  { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ returnHub(); }); }
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
@@ -561,7 +595,7 @@ const $ = id => document.getElementById(id);
     }); }
   { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{
       if(fromStory){ fromStory=false; returnToStory(); }   // 소설 매듭 → 이야기의 그 자리로 복귀
-      else { goHub(); }
+      else { returnHub(); }
     }); }
 
   /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 (상태는 상단 선언) */

@@ -249,6 +249,8 @@
   .acc-body .series-head{ margin:12px 0 8px; }
   .acc-body .series-head:first-child{ margin-top:4px; }
   .acc-body .tower-progress{ margin-top:2px; }
+  .catrow{ position:relative; padding-right:28px; }
+  .cat-arrow{ position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--dim); font-size:18px; }
   .hintbox{ margin-top:16px; animation:hintIn .28s ease-out both; }
   .hint-reveal{ background:#1c1710; border:1px solid var(--accent); color:var(--accent);
     border-radius:10px; padding:9px 12px; font-size:13px; font-family:inherit; }
