@@ -1104,8 +1104,9 @@ const $ = id => document.getElementById(id);
   function twistPt(e){ const r=dialCanvas.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
   function twistInputAngle(){
     const pts=[...dialPtrs.values()];
-    if(pts.length>=2) return Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x)*180/Math.PI;   // 두 손가락 사이 각(회전)
-    if(pts.length===1) return Math.atan2(pts[0].y-dialCanvas.height/2, pts[0].x-dialCanvas.width/2)*180/Math.PI;  // 폴백: 중심 기준 호
+    if(pts.length>=2) return Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x)*180/Math.PI;   // 두 손가락 사이 각(회전) — 주 입력
+    const multi=(navigator.maxTouchPoints||0)>1;
+    if(pts.length===1 && !multi) return Math.atan2(pts[0].y-dialCanvas.height/2, pts[0].x-dialCanvas.width/2)*180/Math.PI;  // 한 손가락 호 = 멀티터치 없는 기기(데스크탑) 폴백만
     return null;
   }
   function twistDown(e){ if(dialDone) return; try{ dialCanvas.setPointerCapture(e.pointerId); }catch(_){} dialPtrs.set(e.pointerId, twistPt(e)); dialLastAng=twistInputAngle(); }
