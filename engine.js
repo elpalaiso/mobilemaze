@@ -57,6 +57,7 @@ const $ = id => document.getElementById(id);
     if(_l && TRICKS[_l.trick] && TRICKS[_l.trick].bind) TRICKS[_l.trick].bind(_l);
     const _hub=$("hub"); if(_hub && _hub.style.display!=="none") buildHub();   // 허브 열려있으면 카드도 새 언어로
     const _bk=$("book"); if(_bk && _bk.style.display!=="none") renderBook(false);   // 책 열려있으면 내용·버튼도 새 언어로
+    const _dy=$("daily"); if(_dy && _dy.style.display!=="none") dailyRender();   // 데일리 열려있으면 새 언어로
   }
   document.querySelectorAll(".langbar button").forEach(b=>
     b.addEventListener("click",()=>applyLang(b.dataset.lang)));
@@ -275,7 +276,7 @@ const $ = id => document.getElementById(id);
   /* 화면 라우터: play(레벨) / hub(항구) / gate(처음?) */
   function showView(v){
     curView=v;
-    ["play","hub","gate","book"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
+    ["play","hub","gate","book","daily"].forEach(id=>{ const e=$(id); if(e) e.style.display=(id===v)?"":"none"; });
     const mb=$("menuBtn"); if(mb) mb.classList.toggle("on", v==="hub");   // 허브 열림=강조(언어 토글처럼)
     refreshTitle();
   }
@@ -335,7 +336,9 @@ const $ = id => document.getElementById(id);
     accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStoriesCats);
     const tc=towerCleared();
     accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.total+" "+(CUR.floorUnit||"층"), renderTowerCats);
-    accordionSoon(list,"✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧");
+    { const h=document.createElement("button"); h.className="hubcard pathcard";   // 별자리 = 자체 화면(12궁) 진입
+      h.innerHTML='✦ '+(CUR.pathDaily||"별자리")+' <span class="hubcount">'+zodiacList().length+'</span> <span class="cat-arrow">›</span>';
+      h.addEventListener("click",()=>{ openDaily(); }); list.appendChild(h); }
   }
   function accordion(list, key, icon, title, sub, renderFn){   // 갈래 헤더(접기/펼치기) + 펼치면 본문 인라인
     const open=!!hubOpen[key];
@@ -415,6 +418,87 @@ const $ = id => document.getElementById(id);
   }
   function goHub(){ hubDetail=null; buildHub(); showView("hub"); }      // 메뉴/처음 → 길목 랜딩(상세 닫음)
   function returnHub(){ buildHub(); showView("hub"); }                  // 책/엔딩 복귀 → 현재 위치 유지(상세면 거기로)
+
+  /* ===== 데일리 별자리 — 12궁 그리드 + '별 잇기'로 점등되는 오늘의 운세 ===== */
+  let dailySel=null;                                  // 선택된 별자리 key(null=그리드)
+  let dCanvas=null, dCtx=null, dStars=[], dStroke=[], dDrawing=false, dLit=false;
+  function dailyLang(){ return (SAVE.lang==="en") ? "en" : "ko"; }
+  function getDaily(){ return (typeof DAILY_SEED!=="undefined") ? DAILY_SEED : { date:"", readings:{} }; }   // Phase2: fetch JSON으로 대체
+  function zodiacList(){ return (typeof ZODIAC!=="undefined") ? ZODIAC : []; }
+  function openDaily(){ dailySel=null; showView("daily"); dailyRender(); }
+  function dailyRender(){ if(dailySel) dailySign(dailySel); else dailyGrid(); }
+  function dailyGrid(){
+    dailyStop();
+    setT("dailyTitle", CUR.dailyTitle||"오늘의 별자리");
+    const list=$("dailyList"); if(!list) return; list.innerHTML="";
+    const back=document.createElement("button"); back.className="hubcard hub-back"; back.textContent="← "+(CUR.hubTitle||"길목");
+    back.addEventListener("click",()=>{ goHub(); }); list.appendChild(back);
+    const dt=document.createElement("div"); dt.className="daily-date"; dt.textContent=getDaily().date||""; list.appendChild(dt);
+    const grid=document.createElement("div"); grid.className="zodiac-grid"; const lang=dailyLang();
+    zodiacList().forEach(z=>{
+      const meta=z[lang]||z.ko;
+      const c=document.createElement("button"); c.className="zodiac-card";
+      c.innerHTML='<span class="z-glyph">'+z.glyph+'</span><span class="z-name">'+(meta.name||z.key)+'</span><span class="z-dates">'+(meta.dates||"")+'</span>';
+      c.addEventListener("click",()=>{ dailySel=z.key; dailyRender(); });
+      grid.appendChild(c);
+    });
+    list.appendChild(grid);
+  }
+  function dailySign(key){
+    dailyStop();
+    const z=zodiacList().find(x=>x.key===key); if(!z){ dailySel=null; return dailyGrid(); }
+    const lang=dailyLang(), meta=z[lang]||z.ko, d=getDaily();
+    const r=(d.readings[key] && (d.readings[key][lang]||d.readings[key].ko)) || { teaser:"", body:"" };
+    setT("dailyTitle", meta.name||key);
+    const list=$("dailyList"); if(!list) return; list.innerHTML="";
+    const back=document.createElement("button"); back.className="hubcard hub-back"; back.textContent="← "+(CUR.dailyTitle||"오늘의 별자리");
+    back.addEventListener("click",()=>{ dailySel=null; dailyRender(); }); list.appendChild(back);
+    const head=document.createElement("div"); head.className="sign-head"; head.innerHTML='<span class="z-glyph big">'+z.glyph+'</span> '+(meta.name||key)+' <span class="z-dates">'+(meta.dates||"")+'</span>'; list.appendChild(head);
+    const teaser=document.createElement("div"); teaser.className="sign-teaser"; teaser.textContent=r.teaser||""; list.appendChild(teaser);
+    dCanvas=document.createElement("canvas"); dCanvas.className="sign-canvas"; list.appendChild(dCanvas);
+    const hint=document.createElement("div"); hint.className="sign-hint"; hint.id="signHint"; hint.textContent=CUR.dailyConnect||"별을 모두 이어 오늘을 열어요"; list.appendChild(hint);
+    const body=document.createElement("div"); body.className="sign-body"; body.id="signBody"; body.textContent=r.body||""; list.appendChild(body);
+    const share=document.createElement("button"); share.className="hubcard sign-share"; share.id="signShare"; share.textContent=CUR.dailyShare||"공유";
+    share.addEventListener("click",()=>dailyShare(z, meta, r)); list.appendChild(share);
+    dStars=z.stars.map(p=>({x:p.x,y:p.y,hit:false})); dStroke=[]; dLit=false;
+    dailyCanvasInit();
+  }
+  function dailyCanvasInit(){
+    if(!dCanvas) return; dCtx=dCanvas.getContext("2d");
+    dCanvas.width=dCanvas.clientWidth||320; dCanvas.height=200;
+    const add=e=>{ if(dLit) return; const rc=dCanvas.getBoundingClientRect(); const x=e.clientX-rc.left, y=e.clientY-rc.top; dStroke.push({x,y});
+      dStars.forEach(s=>{ const sx=s.x*dCanvas.width, sy=s.y*dCanvas.height; if(!s.hit && Math.hypot(x-sx,y-sy)<26){ s.hit=true; haptic(8); } });
+      if(dStars.length && dStars.every(s=>s.hit)) dailyReveal(); else dailyDrawRender(); };
+    const down=e=>{ if(dLit) return; e.preventDefault(); dDrawing=true; try{ dCanvas.setPointerCapture(e.pointerId); }catch(_){} add(e); };
+    const move=e=>{ if(dDrawing){ e.preventDefault(); add(e); } };
+    const up=()=>{ dDrawing=false; };
+    dCanvas.addEventListener("pointerdown",down); dCanvas.addEventListener("pointermove",move);
+    dCanvas.addEventListener("pointerup",up); dCanvas.addEventListener("pointerleave",up); dCanvas.addEventListener("pointercancel",up);
+    dailyDrawRender();
+  }
+  function dailyDrawRender(){
+    if(!dCtx||!dCanvas) return; const w=dCanvas.width, h=dCanvas.height; dCtx.clearRect(0,0,w,h);
+    if(dStroke.length>1){ dCtx.strokeStyle=dLit?"rgba(240,197,107,.85)":"rgba(227,165,66,.5)"; dCtx.lineWidth=2.5; dCtx.lineCap="round"; dCtx.lineJoin="round";
+      dCtx.beginPath(); dStroke.forEach((p,i)=> i?dCtx.lineTo(p.x,p.y):dCtx.moveTo(p.x,p.y)); dCtx.stroke(); }
+    dStars.forEach(s=>{ const sx=s.x*w, sy=s.y*h;
+      if(s.hit){ dCtx.beginPath(); dCtx.arc(sx,sy,10,0,7); dCtx.strokeStyle="rgba(240,197,107,.4)"; dCtx.lineWidth=2; dCtx.stroke(); }
+      dCtx.beginPath(); dCtx.arc(sx,sy, s.hit?5:3.5, 0, 7); dCtx.fillStyle=s.hit?"#f0c56b":"#3a4663"; dCtx.fill(); });
+  }
+  function dailyReveal(){
+    if(dLit) return; dLit=true; haptic([0,70,40,90]); dailyDrawRender();
+    const sec=$("daily"); if(sec) sec.classList.add("lit");
+    const hint=$("signHint"); if(hint) hint.style.display="none";
+  }
+  function dailyStop(){ dDrawing=false; const sec=$("daily"); if(sec) sec.classList.remove("lit"); }
+  function dailyShare(z, meta, r){
+    const d=getDaily();
+    const text=(meta.name||z.key)+" · "+(d.date||"")+"\n"+(r.teaser||"")+"\n\n"+(r.body||"")+"\n— "+(CUR.title||"Yonderkeep");
+    const url=location.href.split("#")[0];
+    (async()=>{
+      try{ if(navigator.share){ await navigator.share({ text, url }); return; } }catch(e){ return; }
+      try{ await navigator.clipboard.writeText(text+" "+url); const sb=$("signShare"); if(sb){ const o=sb.textContent; sb.textContent="🔗"; setTimeout(()=>{ sb.textContent=o; },1500); } }catch(e){}
+    })();
+  }
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
     const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
