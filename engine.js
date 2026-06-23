@@ -475,7 +475,8 @@ const $ = id => document.getElementById(id);
   }
   /* 별자리 그리기(공유 헬퍼) — 정규화 좌표를 (rx,ry,rw,rh) 영역에 그림. paths 있으면 선 그림대로, 없으면 순차 연결. */
   function drawConstel(ctx, stars, paths, rx, ry, rw, rh, o){
-    o=o||{}; const px=s=>rx+s.x*rw, py=s=>ry+s.y*rh;
+    o=o||{}; const k=Math.min(rw,rh), cx=rx+rw/2, cy=ry+rh/2;   // 균일 스케일 = 종횡비 보존(가로로 늘이지 않음)
+    const px=s=>cx+(s.x-0.5)*k, py=s=>cy+(s.y-0.5)*k;
     ctx.strokeStyle=o.line||"rgba(240,197,107,.55)"; ctx.lineWidth=o.lw||1.5; ctx.lineCap="round"; ctx.lineJoin="round";
     if(paths&&paths.length){
       paths.forEach(p=>{ ctx.beginPath(); p.forEach((idx,i)=>{ const s=stars[idx]; if(!s)return; const X=px(s),Y=py(s); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }); ctx.stroke(); });
