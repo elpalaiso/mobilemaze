@@ -261,15 +261,18 @@
   .z-glyph.big{ font-size:30px; }
   .z-name{ font-size:13px; }
   .z-dates{ font-size:10.5px; color:var(--dim); }
-  .sign-head{ text-align:center; font-size:17px; margin:8px 0 2px; color:var(--ink); }
+  .signcard{ background:#0b0f1a; border:1px solid var(--line); border-radius:16px; padding:22px 18px 18px; text-align:center; }
+  .sign-glyph{ font-size:40px; color:var(--accent); line-height:1; margin-bottom:6px;
+    animation:dock-breathe 4.2s ease-in-out infinite; }
+  .sign-head{ text-align:center; font-size:18px; margin:2px 0; color:var(--ink); }
   .sign-head .z-dates{ font-size:12px; }
-  .sign-teaser{ text-align:center; color:var(--accent); font-size:15px; margin:8px 0 12px; }
-  .sign-canvas{ display:block; width:100%; height:200px; background:#080c14; border:1px solid var(--line); border-radius:14px; touch-action:none; }
-  .sign-hint{ text-align:center; color:var(--dim); font-size:12.5px; margin:10px 0; }
-  .sign-body{ display:none; color:var(--ink); line-height:1.75; font-size:15px; margin:6px 4px 14px; text-align:center; }
-  .sign-share{ display:none; width:100%; text-align:center; margin-top:4px; }
-  #daily.lit .sign-body{ display:block; }
-  #daily.lit .sign-share{ display:block; }
+  .signcard .daily-date{ margin:2px 0 10px; }
+  .sign-canvas.deco{ display:block; width:100%; height:150px; margin:2px 0 6px; }
+  .sign-teaser{ text-align:center; color:var(--accent); font-size:15.5px; font-style:italic; margin:10px 6px 14px; }
+  .sign-body{ color:var(--ink); line-height:1.85; font-size:15px; margin:6px 4px 16px; text-align:center; }
+  .sign-line{ margin:0 0 10px; opacity:0; animation:sign-fade .9s ease forwards; }
+  @keyframes sign-fade{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  .sign-share{ width:100%; text-align:center; margin-top:4px; }
   .hintbox{ margin-top:16px; animation:hintIn .28s ease-out both; }
   .hint-reveal{ background:#1c1710; border:1px solid var(--accent); color:var(--accent);
     border-radius:10px; padding:9px 12px; font-size:13px; font-family:inherit; }
