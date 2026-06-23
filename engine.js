@@ -388,6 +388,9 @@ const $ = id => document.getElementById(id);
   const ROPE_PTS = [ {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62} ];  // A6 — tightropeReset가 init때 읽으므로 resetLevels보다 먼저 선언(TDZ 방지)
   let starLevel=null, starCanvas=null, starCtx=null, starDots=[], starStroke=[], starDrawing=false, starDone=false, starConverged=false, starShakeE=0, starBound=false, starListeners=[], starGotMotion=false, starLastMag=0, starMotionTimer=null;  // A2 별가루(shake)
   const STAR_TARGET = [ {x:0.18,y:0.66},{x:0.36,y:0.30},{x:0.54,y:0.58},{x:0.72,y:0.30},{x:0.86,y:0.62} ];  // A2 별자리 목표 — stardustReset가 init때 읽음(resetLevels보다 먼저, TDZ)
+  const STAR_SHAKE_NEED = 6;     // A2 수렴까지 필요한 흔들기 누적 — 키우면 더 많이 흔들어야(빡셈)
+  const STAR_HIT_R = 24;         // A2 별 잇기 인식 반경(px)
+  const STAR_SCATTER = 0.42;     // A2 초기 산포 — stardustReset(init)가 읽으므로 반드시 resetLevels보다 먼저(TDZ)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -975,10 +978,8 @@ const $ = id => document.getElementById(id);
     if(ropeGauge && !ropeCompleteDone) ropeGauge.textContent=CUR.ropePrefix+ropeNext+"/"+ropeStars.length;
   }
 
-  /* ===== A2 — 별가루(Stardust): 흔들어 흩어진 별을 별자리로 모은 뒤 한 획으로 잇는다(상태빚기) ===== */
-  const STAR_SHAKE_NEED = 6;     // 수렴까지 필요한 흔들기 누적 에너지 — 키우면 더 많이 흔들어야(빡셈)
-  const STAR_HIT_R = 24;         // 별 잇기 인식 반경(px)
-  const STAR_SCATTER = 0.42;     // 초기 산포 정도
+  /* ===== A2 — 별가루(Stardust): 흔들어 흩어진 별을 별자리로 모은 뒤 한 획으로 잇는다(상태빚기) =====
+     ⚠️ STAR_SHAKE_NEED/HIT_R/SCATTER 상수는 상단(STAR_TARGET 옆)으로 이동함 — stardustReset가 init때 STAR_SCATTER를 읽으므로 TDZ 방지 */
   function stardustInit(){
     starCanvas=$("starCanvas"); if(!starCanvas) return;
     starCtx=starCanvas.getContext("2d");
