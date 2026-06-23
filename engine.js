@@ -381,7 +381,7 @@ const $ = id => document.getElementById(id);
   let holdActive=false, holdLocked=false, holdId=null, holdDrawId=null, holdRaf=null, holdBound=false, holdListeners=[];
   let tightropeLevel=null, ropeCanvas=null, ropeCtx=null, ropeGauge=null, ropeFill=null, ropeFallback=null;
   let ropeStars=[], ropeStroke=[], ropeDrawing=false, ropeDone=false, ropeCompleteDone=false, ropeRaf=null, ropeBound=false, ropeListeners=[];
-  let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeCenterMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1;
+  let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeCenterMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1, ropeBaseline=0;
   const ROPE_PTS = [ {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62} ];  // A6 — tightropeReset가 init때 읽으므로 resetLevels보다 먼저 선언(TDZ 방지)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
@@ -842,16 +842,18 @@ const $ = id => document.getElementById(id);
   }
   function tightropeShowFallback(){ if(ropeFallback) ropeFallback.style.display="grid"; const b=$("ropeSensorBtn"); if(b) b.style.display="none"; }
   function tightropeOnTilt(e){
-    ropeGotEvent=true;
     const g=Number.isFinite(e.gamma) ? e.gamma : 0;
-    ropeTilt=Math.max(-28,Math.min(28,g));
+    if(!ropeGotEvent) ropeBaseline=g;     // 첫 이벤트의 기울기를 영점으로 보정(자연스러운 파지각=중립)
+    ropeGotEvent=true;
+    const rel=g-ropeBaseline;
+    ropeTilt=Math.max(-28,Math.min(28,rel));
     if(Math.abs(ropeTilt)>1) ropeLastDrift = ropeTilt>0 ? 1 : -1;
   }
   function tightropeReset(){
     tightropeStop();
     ropeStars=ROPE_PTS.map(p=>({x:p.x,y:p.y,hit:false}));
     ropeStroke=[]; ropeDrawing=false; ropeDone=false; ropeCompleteDone=false;
-    ropeX=0; ropeV=0; ropeTilt=0; ropeFallbackDir=0; ropeFallMs=0; ropeCenterMs=0; ropeLastTs=0; ropeGotEvent=false; ropeLastDrift=1;
+    ropeX=0; ropeV=0; ropeTilt=0; ropeFallbackDir=0; ropeFallMs=0; ropeCenterMs=0; ropeLastTs=0; ropeGotEvent=false; ropeLastDrift=1; ropeBaseline=0;
     const rv=$("rope-reveal"); if(rv) rv.classList.remove("show");
     const b=$("ropeSensorBtn"); if(b) b.style.display="";
     if(ropeFallback) ropeFallback.style.display="none";
@@ -887,7 +889,6 @@ const $ = id => document.getElementById(id);
     ropeLastTs=ts;
     const input = ropeFallbackDir ? ropeFallbackDir*ROPE_BUTTON_PUSH : ropeTilt*ROPE_TILT_GAIN*dt;
     ropeV += input;
-    if(!ropeFallbackDir && Math.abs(ropeTilt)<1.2) ropeV += ropeLastDrift*ROPE_DRIFT*(dt/16);
     ropeV *= ROPE_FRICTION;
     ropeX += ropeV*(dt/16);
     ropeX = Math.max(-0.56, Math.min(0.56, ropeX));
