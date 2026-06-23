@@ -65,18 +65,6 @@ const SCENARIOS = {
     ],
     ending: { title:"eraseDoneTitle", body:"eraseDoneBody", end:"eraseDoneEnd", stay:"eraseStay", seqKey:"eraseSeq" },   // 코다는 소설 본문 몫
   },
-  tower_t1: {
-    id: "tower_t1", titleKey: "sc_tower_t1", series:"tower", quiz:true,
-    levels: [
-      { sec:"lv1", trick:"press", text:{ tag:"qt1pTag", riddle:"qt1pRiddle", press:"qt1pPress", reveal:"qtReveal", hint:"qt1pHint" }, hints:["qt1pH1","qt1pH2","qt1pH3"] },
-      { sec:"lv2", trick:"pinch", ansHash:{ko:5352836329947915,en:2518879951497208}, text:{ tag:"qt1zTag", riddle:"qt1zRiddle", before:"qt1zBefore", tiny:"qt1zTiny", after:"qt1zAfter", hint:"qt1zHint" }, hints:["qt1zH1","qt1zH2","qt1zH3"] },
-      { sec:"lv3", trick:"tilt", text:{ tag:"qt1tTag", riddle:"qt1tRiddle", secret:"qtReveal", hint:"qt1tHint", fbhint:"qt1tFbHint" }, hints:["qt1tH1","qt1tH2","qt1tH3"] },
-      { sec:"lv4", trick:"blow", text:{ tag:"qt1bTag", riddle:"qt1bRiddle", hint:"qt1bHint" }, hints:["qt1bH1","qt1bH2","qt1bH3"] },
-      { sec:"lv5", trick:"route", text:{ tag:"qt1rTag", riddle:"qt1rRiddle", hint:"qt1rHint", reveal:"qtReveal" }, hints:["qt1rH1","qt1rH2","qt1rH3"] },
-      { sec:"lv6", trick:"flame", text:{ tag:"qt1fTag", riddle:"qt1fRiddle", hint:"qt1fHint" }, hints:["qt1fH1","qt1fH2","qt1fH3"] },
-    ],
-    ending: { title:"qt1DoneTitle", body:"qt1DoneBody", end:"qt1DoneEnd" },
-  },
   tower_a3: {
     id: "tower_a3", titleKey: "sc_tower_a3", series:"tower", quiz:true, gate:"tower_a2",
     levels: [
@@ -106,7 +94,7 @@ const SCENARIOS = {
     ending: { title:"qtA5DoneTitle", body:"qtA5DoneBody", end:"qtA5DoneEnd" },
   },
   tower_a1: {
-    id: "tower_a1", titleKey: "sc_tower_a1", series:"tower", quiz:true, gate:"tower_t1",
+    id: "tower_a1", titleKey: "sc_tower_a1", series:"tower", quiz:true,
     levels: [
       { sec:"lvGate", trick:"gate", gateTarget:0,
         text:{ tag:"qtA1Tag", riddle:"qtA1Riddle", hint:"qtA1Hint", reveal:"qtReveal" },
@@ -179,7 +167,10 @@ const SERIES = {
   tower: {
     id: "tower",
     titleKey: "seriesTower",
-    scenarios: ["tower_t1","tower_a1","tower_a2","tower_a3","tower_a4","tower_a5","tower_a6","tower_a7"],
+    scenarios: ["tower_a1","tower_a2","tower_a3","tower_a4","tower_a5","tower_a6","tower_a7"],
+    groups: [
+      { titleKey:"towerFloor1", scenarios:["tower_a1","tower_a2","tower_a3","tower_a4","tower_a5","tower_a6","tower_a7"] },
+    ],
     novelFirst: false,
     quiz: true,
     stories: [],

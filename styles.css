@@ -234,6 +234,9 @@
   .tower-card.cleared{ border-color:#6f7a37; color:#f0e8ce; background:#161d20; }
   .tower-card.locked{ color:#667086; background:#101622; border-style:dashed; opacity:.72; filter:grayscale(.9); }
   .tower-card:disabled{ cursor:not-allowed; }
+  .tower-group-head{ color:var(--accent); font-size:12.5px; letter-spacing:.1em; font-weight:600;
+    margin:8px 0 8px 4px; opacity:.85; }
+  .tower-card.tower-sub{ margin-left:18px; }
   .hintbox{ margin-top:16px; animation:hintIn .28s ease-out both; }
   .hint-reveal{ background:#1c1710; border:1px solid var(--accent); color:var(--accent);
     border-radius:10px; padding:9px 12px; font-size:13px; font-family:inherit; }

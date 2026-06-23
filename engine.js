@@ -301,6 +301,17 @@ const $ = id => document.getElementById(id);
     const list=$("hubList"); if(!list) return;
     setT("hubTitle", CUR.hubTitle);
     list.innerHTML="";
+    function towerCard(sc, series){   // 항구 카드 1개(퀴즈=타워카드 / 일반=촛불카드) — 그룹·평면 양쪽서 재사용
+      const st=SAVE.scenarios[sc.id]||{};
+      const card=document.createElement("button"); card.className="hubcard";
+      const locked=!isUnlocked(sc.id), tower=series.quiz;
+      const total=sc.levels.length, done=Math.min(st.step||0, total);
+      if(tower) card.classList.add("tower-card", locked?"locked":(st.cleared?"cleared":"current"));
+      card.innerHTML=(locked?"🔒 ":(st.cleared?(tower?"✓ ":"🟡 "):(tower?"✦ ":"🕯️ ")))+(CUR[sc.titleKey]||sc.id)+
+        ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
+      if(locked) card.disabled=true; else card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
+      return card;
+    }
     // 시리즈별 섹션: 헤더 + 그 항해 카드들 + 그 시리즈의 단편(📖). 각 시리즈가 독립 확장.
     Object.values(SERIES).forEach(series=>{
       const head=document.createElement("div"); head.className="series-head";
@@ -308,21 +319,20 @@ const $ = id => document.getElementById(id);
       if(series.quiz){
         const ids=series.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
         const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
+        const groups = series.groups || [{ scenarios: ids }];   // 2단 계층: (층) 그룹 헤더 + 하위 층 카드들
+        groups.forEach(g=>{
+          if(g.titleKey){ const gh=document.createElement("div"); gh.className="tower-group-head"; gh.textContent=CUR[g.titleKey]||g.titleKey; list.appendChild(gh); }
+          (g.scenarios||[]).forEach(scid=>{
+            const sc=SCENARIOS[scid]; if(!sc) return;
+            const card=towerCard(sc, series); if(g.titleKey) card.classList.add("tower-sub");
+            list.appendChild(card);
+          });
+        });
+        return;
       }
-      (series.scenarios||[]).forEach(scid=>{
-        const sc=SCENARIOS[scid]; if(!sc) return;
-        const st=SAVE.scenarios[sc.id]||{};
-        const card=document.createElement("button"); card.className="hubcard";
-        const locked=!isUnlocked(sc.id), tower=series.quiz;
-        const total=sc.levels.length, done=Math.min(st.step||0, total);   // step=완료 레벨 수
-        if(tower) card.classList.add("tower-card", locked?"locked":(st.cleared?"cleared":"current"));
-        card.innerHTML=(locked?"🔒 ":(st.cleared?(tower?"✓ ":"🟡 "):(tower?"✦ ":"🕯️ ")))+(CUR[sc.titleKey]||sc.id)+
-          ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
-        if(locked) card.disabled=true; else card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
-        list.appendChild(card);
-      });
+      // 비-퀴즈 시리즈: 평평한 항해 카드들 + 단편(📖)
+      (series.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(towerCard(sc, series)); });
       // 그 시리즈의 단편들(각 📖 + 하위 매듭 들여쓰기). 소설-먼저 = 항해는 매듭으로만.
-      if(series.quiz) return;
       (series.stories||[]).forEach((story, si)=>{
         if(!CUR[story.textKey]) return;
         const keys = story.knots ? Object.keys(story.knots) : [];
