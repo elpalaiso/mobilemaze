@@ -410,7 +410,7 @@ const $ = id => document.getElementById(id);
   let gateTarget=0, gatePressIdx=-1, gatePressStart=0, gateRaf=null, gateDone=false, gateBound=false;  // A1 문간(gate)
   const GATE_HOLD_MS=650;  // A1 정답 패드 길게누르기 시간
   let tideCtx=null, tideStream=null, tideRaf=null, tideLevel=0, tideHold=0, tideDone=false, tideBound=false, tideFallback=false, tideFallbackHold=false, tideLastTs=0;  // A5 물때(tide)
-  const TIDE_LOW=42, TIDE_HIGH=70, TIDE_HOLD_MS=2600;  // A5 — tideReset/init가 읽으므로 resetLevels보다 먼저(TDZ 방지)
+  const TIDE_LOW=40, TIDE_HIGH=74, TIDE_HOLD_MS=2200;  // A5 — tideReset/init가 읽으므로 resetLevels보다 먼저(TDZ 방지). 띠 넓힘+유지시간↓(난이도↓)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -1253,10 +1253,10 @@ const $ = id => document.getElementById(id);
     if(tideDone) return;
     const dt=Math.min(40,tideLastTs ? ts-tideLastTs : 16); tideLastTs=ts;
     if(tideFallback) tideLevel += (tideFallbackHold ? 1.8 : -0.9) * (dt/16);
-    else tideLevel += (input - tideLevel) * 0.18;
+    else tideLevel += (input - tideLevel) * 0.14;  // 스무딩↑(반응 완만) → 급변 덜 튐
     tideLevel=Math.max(0,Math.min(100,tideLevel));
     if(tideLevel>=TIDE_LOW && tideLevel<=TIDE_HIGH) tideHold=Math.min(TIDE_HOLD_MS,tideHold+dt);
-    else if(tideLevel>TIDE_HIGH) tideHold=Math.max(0,tideHold-dt*2.4);
+    else if(tideLevel>TIDE_HIGH) tideHold=Math.max(0,tideHold-dt*1.5);
     else tideHold=Math.max(0,tideHold-dt*.7);
     tideRender();
     if(tideHold>=TIDE_HOLD_MS) tideComplete();
@@ -1273,7 +1273,7 @@ const $ = id => document.getElementById(id);
       (function loop(ts){
         analyser.getByteFrequencyData(data);
         let sum=0, n=24; for(let i=2;i<2+n;i++) sum+=data[i];
-        const lvl=Math.max(0,Math.min(100,((sum/n)-28)*1.15));
+        const lvl=Math.max(0,Math.min(100,((sum/n)-28)*0.92));  // 입력 게인↓ → 덜 민감(오버슈트↓, 약한 숨에도 OK)
         tideTick(lvl,ts||performance.now());
         if(!tideDone) tideRaf=requestAnimationFrame(loop);
       })();
