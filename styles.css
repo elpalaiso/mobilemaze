@@ -243,6 +243,12 @@
   .pathcard.soon{ opacity:.6; border-style:dashed; cursor:not-allowed; }
   .hero-resume{ border-color:var(--accent); background:#181c2c; box-shadow:0 0 0 1px rgba(227,165,66,.12) inset; }
   .hub-back{ color:var(--dim); background:transparent; border-color:#222a3d; font-size:13px; padding:9px 14px; margin-bottom:6px; }
+  .acc-chev{ display:inline-block; width:.9em; color:var(--accent); opacity:.85; }
+  .acc-head.open{ border-color:var(--accent); background:#181c2c; }
+  .acc-body{ margin:2px 0 12px 12px; padding-left:10px; border-left:1px solid #222a3d; }
+  .acc-body .series-head{ margin:12px 0 8px; }
+  .acc-body .series-head:first-child{ margin-top:4px; }
+  .acc-body .tower-progress{ margin-top:2px; }
   .hintbox{ margin-top:16px; animation:hintIn .28s ease-out both; }
   .hint-reveal{ background:#1c1710; border:1px solid var(--accent); color:var(--accent);
     border-radius:10px; padding:9px 12px; font-size:13px; font-family:inherit; }

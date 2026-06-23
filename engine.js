@@ -297,7 +297,7 @@ const $ = id => document.getElementById(id);
     const series=sc.series && SERIES[sc.series], ids=(series&&series.scenarios)||[], at=ids.indexOf(scid);
     if(at>=0 && ids.slice(at+1).some(id=>{ const st=SAVE.scenarios[id]; return st && (st.cleared || st.step>0); })) return true;
     return !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
-  let hubPath=null;   // 길목 2단 IA: null=랜딩(갈래 고르기) / "stories"|"tower"|"daily"=서브허브
+  let hubOpen=null;   // 길목 아코디언 — 세션 동안 갈래 펼침 상태 {stories,tower,daily}; null=초기화 전
   function hubCard(sc, series){   // 항구 카드 1개(퀴즈=타워카드 / 일반=촛불카드)
     const st=SAVE.scenarios[sc.id]||{};
     const card=document.createElement("button"); card.className="hubcard";
@@ -320,25 +320,9 @@ const $ = id => document.getElementById(id);
   function storyCount(){ let n=0; Object.values(SERIES).forEach(s=>{ if(s.quiz) return; (s.stories||[]).forEach(st=>{ if(CUR[st.textKey]) n++; }); }); return n; }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
+    setT("hubTitle", CUR.hubTitle);
     list.innerHTML="";
-    if(hubPath==="stories"){ setT("hubTitle", CUR.pathStories||"이야기"); hubBackBtn(list); renderStories(list); }
-    else if(hubPath==="tower"){ setT("hubTitle", CUR.pathTower||"퀴즈 타워"); hubBackBtn(list); renderTower(list); }
-    else if(hubPath==="daily"){ setT("hubTitle", CUR.pathDaily||"별자리"); hubBackBtn(list); renderDaily(list); }
-    else { setT("hubTitle", CUR.hubTitle); renderLanding(list); }
-  }
-  function hubBackBtn(list){
-    const b=document.createElement("button"); b.className="hubcard hub-back";
-    b.textContent="← "+(CUR.hubTitle||"길목");
-    b.addEventListener("click",()=>{ hubPath=null; buildHub(); });
-    list.appendChild(b);
-  }
-  function pathCard(list, path, icon, title, sub, soon){
-    const c=document.createElement("button"); c.className="hubcard pathcard"+(soon?" soon":"");
-    c.innerHTML=icon+" "+title+(sub?' <span class="hubcount'+(soon?" story":"")+'">'+sub+'</span>':'');
-    if(soon) c.disabled=true; else c.addEventListener("click",()=>{ hubPath=path; buildHub(); });
-    list.appendChild(c);
-  }
-  function renderLanding(list){
+    if(!hubOpen) hubOpen={ stories:false, tower:!!towerResume(), daily:false };   // 초기: 진행 중 타워만 자동 펼침(옵션 B)
     const r=towerResume();   // 히어로 — 이어하기(타워 진행 중일 때만)
     if(r){
       const rc=document.createElement("button"); rc.className="hubcard hero-resume";
@@ -346,10 +330,23 @@ const $ = id => document.getElementById(id);
       rc.addEventListener("click",()=>{ startScenario(r.id); showView("play"); });
       list.appendChild(rc);
     }
-    const tc=towerCleared();   // 갈래 카드들
-    pathCard(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"));
-    pathCard(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total);
-    pathCard(list,"daily","✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧", true);
+    accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStories);
+    const tc=towerCleared();
+    accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total, renderTower);
+    accordionSoon(list,"✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧");
+  }
+  function accordion(list, key, icon, title, sub, renderFn){   // 갈래 헤더(접기/펼치기) + 펼치면 본문 인라인
+    const open=!!hubOpen[key];
+    const head=document.createElement("button"); head.className="hubcard pathcard acc-head"+(open?" open":"");
+    head.innerHTML='<span class="acc-chev">'+(open?"▾":"▸")+'</span> '+icon+" "+title+(sub?' <span class="hubcount">'+sub+'</span>':'');
+    head.addEventListener("click",()=>{ hubOpen[key]=!open; buildHub(); });
+    list.appendChild(head);
+    if(open){ const body=document.createElement("div"); body.className="acc-body"; renderFn(body); list.appendChild(body); }
+  }
+  function accordionSoon(list, icon, title, sub){   // 비활성 갈래(데일리 등 — 곧)
+    const head=document.createElement("button"); head.className="hubcard pathcard acc-head soon"; head.disabled=true;
+    head.innerHTML='<span class="acc-chev">·</span> '+icon+" "+title+' <span class="hubcount story">'+sub+'</span>';
+    list.appendChild(head);
   }
   function renderTower(list){
     Object.values(SERIES).forEach(series=>{
@@ -389,11 +386,7 @@ const $ = id => document.getElementById(id);
       });
     });
   }
-  function renderDaily(list){
-    const d=document.createElement("div"); d.className="series-soon"; d.textContent=CUR.dailySoon||"오늘의 별자리 — 곧 펼쳐집니다";
-    list.appendChild(d);
-  }
-  function goHub(){ hubPath=null; buildHub(); showView("hub"); }   // 어디서든 길목 랜딩으로
+  function goHub(){ buildHub(); showView("hub"); }   // 어디서든 길목으로(아코디언 펼침 상태는 세션 유지)
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
     const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
