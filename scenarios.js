@@ -77,7 +77,7 @@ const SCENARIOS = {
     ],
     ending: { title:"qt1DoneTitle", body:"qt1DoneBody", end:"qt1DoneEnd" },
   },
-  tower_a4: {
+  tower_a3: {
     id: "tower_a3", titleKey: "sc_tower_a3", series:"tower", quiz:true, gate:"tower_a2",
     levels: [
       { sec:"lvDial", trick:"twist",
