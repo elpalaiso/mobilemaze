@@ -79,6 +79,20 @@
   #hold-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
     font-size:18px; letter-spacing:.05em; margin-top:12px; }
   #hold-reveal.show{ opacity:1; }
+  /* A6 외줄(Tightrope) — 기울임 + 긋기 동시 */
+  .tightrope{ background:#0b0f1a; border:1px solid var(--line); border-radius:12px;
+    padding:14px; touch-action:none; user-select:none; -webkit-user-select:none; }
+  #ropeCanvas{ display:block; width:100%; height:230px; background:#080c14;
+    border:1px solid var(--line); border-radius:12px; touch-action:none; }
+  .rope-meter{ height:8px; background:var(--line); border-radius:5px; margin-top:12px; overflow:hidden; }
+  .rope-meter .fill{ height:100%; width:0%; background:var(--accent); transition:width .12s; }
+  .rope-fallback{ display:none; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .balance-btn{ min-height:48px; background:#141b2e; border:1px solid var(--line); border-radius:10px;
+    color:var(--dim); font:700 14px/1.2 inherit; touch-action:none; }
+  .balance-btn:active{ border-color:var(--accent); color:var(--accent); background:#1c1710; }
+  #rope-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
+    font-size:18px; letter-spacing:.05em; margin-top:12px; }
+  #rope-reveal.show{ opacity:1; }
   /* 길 그리기(road) — 측량가 시리즈 */
   #roadCanvas{ display:block; width:100%; height:220px; background:#0b0f1a;
     border:1px solid var(--line); border-radius:12px; touch-action:none; }

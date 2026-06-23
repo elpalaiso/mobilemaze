@@ -87,6 +87,15 @@ const SCENARIOS = {
     ],
     ending: { title:"qtA4DoneTitle", body:"qtA4DoneBody", end:"qtA4DoneEnd" },
   },
+  tower_a6: {
+    id: "tower_a6", titleKey: "sc_tower_a6", series:"tower", quiz:true, gate:"tower_a4",
+    levels: [
+      { sec:"lvRope", trick:"tightrope",
+        text:{ tag:"qtA6Tag", riddle:"qtA6Riddle", hint:"qtA6Hint", reveal:"qtReveal" },
+        hints:["qtA6H1","qtA6H2","qtA6H3"] },
+    ],
+    ending: { title:"qtA6DoneTitle", body:"qtA6DoneBody", end:"qtA6DoneEnd" },
+  },
   /* 재회 — 단편 소설(책)의 마지막 장으로 이전. 플레이 곁가지에선 제거(중복 회피).
      ember 트릭 메시지 오버라이드 + 긴 엔딩 seqKey 시스템은 코드에 유지 → 다음 긴-엔딩 곁가지에서 재사용. */
 };
@@ -125,7 +134,7 @@ const SERIES = {
   tower: {
     id: "tower",
     titleKey: "seriesTower",
-    scenarios: ["tower_t1","tower_a4"],
+    scenarios: ["tower_t1","tower_a4","tower_a6"],
     novelFirst: false,
     quiz: true,
     stories: [],
