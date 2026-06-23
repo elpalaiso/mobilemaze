@@ -99,6 +99,15 @@
   #dial-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
     font-size:18px; letter-spacing:.05em; margin-top:12px; }
   #dial-reveal.show{ opacity:1; }
+  .gatepads{ display:flex; gap:14px; justify-content:center; margin:18px 0; }
+  .gatepad{ position:relative; width:78px; height:78px; border:1px solid #3a4663; border-radius:14px;
+    background:#141a2b; color:var(--accent); font-size:30px; overflow:hidden; cursor:pointer; }
+  .gatepad .g{ position:relative; z-index:1; }
+  .gatefill{ position:absolute; left:0; bottom:0; width:100%; height:0%; background:rgba(227,165,66,.22); transition:height .05s linear; }
+  .gatepad.wrong{ border-color:#bf5830; }
+  #gate-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
+    font-size:18px; letter-spacing:.05em; margin-top:12px; }
+  #gate-reveal.show{ opacity:1; }
   /* 길 그리기(road) — 측량가 시리즈 */
   #roadCanvas{ display:block; width:100%; height:220px; background:#0b0f1a;
     border:1px solid var(--line); border-radius:12px; touch-action:none; }

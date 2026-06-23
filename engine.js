@@ -128,6 +128,9 @@ const $ = id => document.getElementById(id);
     twist:    { init:twistInit, cleanup:twistCleanup, reset:twistReset, bind:(lv)=>{ const t=lv.text||{};
       twistReset(); setT("dial-tag",CUR[t.tag]); setT("dial-riddle",CUR[t.riddle]); setT("dial-hint",CUR[t.hint]);
       setT("dialGauge",CUR.dialPrefix+"0%"); setT("dial-reveal",CUR[t.reveal]); } },
+    gate:     { init:gateInit, cleanup:gateCleanup, reset:gateReset, bind:(lv)=>{ const t=lv.text||{};
+      gateTarget=lv.gateTarget||0; gateReset();
+      setT("gate-tag",CUR[t.tag]); setT("gate-riddle",CUR[t.riddle]); setT("gate-hint",CUR[t.hint]); setT("gate-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -396,6 +399,8 @@ const $ = id => document.getElementById(id);
   const STAR_SCATTER = 0.42;     // A2 초기 산포 — stardustReset(init)가 읽으므로 반드시 resetLevels보다 먼저(TDZ)
   let dialCanvas=null, dialCtx=null, dialAngle=0, dialTarget=0, dialHoldMs=0, dialDone=false, dialRaf=null, dialBound=false, dialListeners=[], dialPtrs=new Map(), dialLastAng=null, dialLastTs=0;  // A3 톱니(twist)
   const TWIST_TARGET=140, TWIST_TOL=12, TWIST_HOLD_MS=800;  // A3 — twistReset(init)가 TWIST_TARGET 읽음 → 상단(TDZ 방지)
+  let gateTarget=0, gatePressIdx=-1, gatePressStart=0, gateRaf=null, gateDone=false, gateBound=false;  // A1 문간(gate)
+  const GATE_HOLD_MS=650;  // A1 정답 패드 길게누르기 시간
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -424,6 +429,7 @@ const $ = id => document.getElementById(id);
     tightropeReset();                                 // A6
     stardustReset();                                  // A2
     twistReset();                                     // A3
+    gateReset();                                      // A1
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
@@ -1155,6 +1161,58 @@ const $ = id => document.getElementById(id);
     dialCtx.beginPath(); dialCtx.arc(cx,cy,7,0,7); dialCtx.fillStyle="#e3a542"; dialCtx.fill();
     const g=$("dialGauge"); if(g && !dialDone) g.textContent=CUR.dialPrefix+Math.round(Math.min(100,dialHoldMs/TWIST_HOLD_MS*100))+"%";
   }
+
+  /* ===== A1 — 문간(Antechamber): 수수께끼의 답에 해당하는 표식만 길게 누르면 열린다(인지 라우팅) ===== */
+  function gatePads(){ return document.querySelectorAll("#lvGate .gatepad"); }
+  function setGateFill(i,frac){ const p=gatePads()[i]; if(!p) return; const f=p.querySelector(".gatefill"); if(f) f.style.height=(Math.max(0,Math.min(1,frac))*100)+"%"; }
+  function gateInit(){
+    const pads=gatePads(); if(!pads.length) return;
+    if(!gateBound){
+      pads.forEach(p=>{
+        const i=+p.dataset.i;
+        p.addEventListener("pointerdown",e=>{ e.preventDefault(); try{ p.setPointerCapture(e.pointerId); }catch(_){} gatePadDown(i,p); });
+        p.addEventListener("pointerup",gatePadUp);
+        p.addEventListener("pointercancel",gatePadUp);
+        p.addEventListener("pointerleave",gatePadUp);
+      });
+      gateBound=true;
+    }
+    gateReset();
+  }
+  function gatePadDown(i,p){
+    if(gateDone) return;
+    if(i!==gateTarget){ p.classList.add("wrong"); haptic(8); setTimeout(()=>p.classList.remove("wrong"),260); return; }   // 오답 표식: 열리지 않음
+    gatePressIdx=i; gatePressStart=performance.now();
+    if(gateRaf) cancelAnimationFrame(gateRaf);
+    gateRaf=requestAnimationFrame(gateLoop);
+  }
+  function gatePadUp(){
+    gatePressIdx=-1;
+    if(gateRaf){ cancelAnimationFrame(gateRaf); gateRaf=null; }
+    if(!gateDone) setGateFill(gateTarget,0);
+  }
+  function gateLoop(){
+    if(gatePressIdx<0 || gateDone) return;
+    const el=(performance.now()-gatePressStart)/GATE_HOLD_MS;
+    setGateFill(gateTarget, el);
+    if(el>=1){ gateComplete(); return; }
+    gateRaf=requestAnimationFrame(gateLoop);
+  }
+  function gateComplete(){
+    if(gateDone) return; gateDone=true; haptic([0,80,40,120]);
+    if(gateRaf){ cancelAnimationFrame(gateRaf); gateRaf=null; }
+    setGateFill(gateTarget,1);
+    const rv=$("gate-reveal"); if(rv) rv.classList.add("show");
+    revealAdvance();
+  }
+  function gateReset(){
+    gatePressIdx=-1; gateDone=false;
+    if(gateRaf){ cancelAnimationFrame(gateRaf); gateRaf=null; }
+    setGateFill(0,0); setGateFill(1,0); setGateFill(2,0);
+    gatePads().forEach(p=>p.classList.remove("wrong"));
+    const rv=$("gate-reveal"); if(rv) rv.classList.remove("show");
+  }
+  function gateCleanup(){ if(gateRaf){ cancelAnimationFrame(gateRaf); gateRaf=null; } gatePressIdx=-1; }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
      route와 달리 웨이포인트를 처음→끝 순서로 통과해야 한다(길이니까). 마지막 점=떠나는 사람. 완주 시
