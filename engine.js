@@ -916,7 +916,7 @@ const $ = id => document.getElementById(id);
     const w=ropeCanvas.width, h=ropeCanvas.height, mid=w/2, ballY=34;
     ropeCtx.clearRect(0,0,w,h);
     ropeCtx.strokeStyle="rgba(227,165,66,.26)"; ropeCtx.lineWidth=8; ropeCtx.lineCap="round";
-    ropeCtx.beginPath(); ropeCtx.moveTo(mid-w*ROPE_LIMIT, ballY); ropeCtx.lineTo(mid+w*ROPE_LIMIT, ballY); ropeCtx.stroke();
+    ropeCtx.beginPath(); ropeCtx.moveTo(mid-w*ROPE_LIMIT*0.72, ballY); ropeCtx.lineTo(mid+w*ROPE_LIMIT*0.72, ballY); ropeCtx.stroke();  // 레인 폭 = 공 렌더 스케일(0.72)과 일치 → 중앙판정과 시각 정합
     ropeCtx.strokeStyle="rgba(227,165,66,.56)"; ropeCtx.lineWidth=2;
     ropeCtx.beginPath(); ropeCtx.moveTo(mid, 20); ropeCtx.lineTo(mid, 52); ropeCtx.stroke();
     const hitStars=ropeStars.filter(s=>s.hit);
