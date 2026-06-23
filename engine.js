@@ -297,42 +297,77 @@ const $ = id => document.getElementById(id);
     const series=sc.series && SERIES[sc.series], ids=(series&&series.scenarios)||[], at=ids.indexOf(scid);
     if(at>=0 && ids.slice(at+1).some(id=>{ const st=SAVE.scenarios[id]; return st && (st.cleared || st.step>0); })) return true;
     return !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
+  let hubPath=null;   // 길목 2단 IA: null=랜딩(갈래 고르기) / "stories"|"tower"|"daily"=서브허브
+  function hubCard(sc, series){   // 항구 카드 1개(퀴즈=타워카드 / 일반=촛불카드)
+    const st=SAVE.scenarios[sc.id]||{};
+    const card=document.createElement("button"); card.className="hubcard";
+    const locked=!isUnlocked(sc.id), tower=series.quiz;
+    const total=sc.levels.length, done=Math.min(st.step||0, total);
+    if(tower) card.classList.add("tower-card", locked?"locked":(st.cleared?"cleared":"current"));
+    card.innerHTML=(locked?"🔒 ":(st.cleared?(tower?"✓ ":"🟡 "):(tower?"✦ ":"🕯️ ")))+(CUR[sc.titleKey]||sc.id)+
+      ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
+    if(locked) card.disabled=true; else card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
+    return card;
+  }
+  function towerCleared(){ const t=SERIES.tower, ids=(t&&t.scenarios)||[]; return { done:ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length, total:ids.length }; }
+  function towerResume(){   // 진행 중(해금·미클리어) 타워 층 — 시작한 적 있을 때만
+    const t=SERIES.tower; if(!t) return null;
+    const ids=t.scenarios||[];
+    if(!ids.some(id=>{ const st=SAVE.scenarios[id]; return st && (st.cleared||st.step>0); })) return null;
+    for(const id of ids){ const st=SAVE.scenarios[id]; if(!(st&&st.cleared)) return isUnlocked(id)?SCENARIOS[id]:null; }
+    return null;   // 전부 클리어
+  }
+  function storyCount(){ let n=0; Object.values(SERIES).forEach(s=>{ if(s.quiz) return; (s.stories||[]).forEach(st=>{ if(CUR[st.textKey]) n++; }); }); return n; }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
-    setT("hubTitle", CUR.hubTitle);
     list.innerHTML="";
-    function towerCard(sc, series){   // 항구 카드 1개(퀴즈=타워카드 / 일반=촛불카드) — 그룹·평면 양쪽서 재사용
-      const st=SAVE.scenarios[sc.id]||{};
-      const card=document.createElement("button"); card.className="hubcard";
-      const locked=!isUnlocked(sc.id), tower=series.quiz;
-      const total=sc.levels.length, done=Math.min(st.step||0, total);
-      if(tower) card.classList.add("tower-card", locked?"locked":(st.cleared?"cleared":"current"));
-      card.innerHTML=(locked?"🔒 ":(st.cleared?(tower?"✓ ":"🟡 "):(tower?"✦ ":"🕯️ ")))+(CUR[sc.titleKey]||sc.id)+
-        ' <span class="hubcount'+(done>=total&&total>0?' full':'')+'">('+done+'/'+total+')</span>';
-      if(locked) card.disabled=true; else card.addEventListener("click",()=>{ startScenario(sc.id); showView("play"); });
-      return card;
+    if(hubPath==="stories"){ setT("hubTitle", CUR.pathStories||"이야기"); hubBackBtn(list); renderStories(list); }
+    else if(hubPath==="tower"){ setT("hubTitle", CUR.pathTower||"퀴즈 타워"); hubBackBtn(list); renderTower(list); }
+    else if(hubPath==="daily"){ setT("hubTitle", CUR.pathDaily||"별자리"); hubBackBtn(list); renderDaily(list); }
+    else { setT("hubTitle", CUR.hubTitle); renderLanding(list); }
+  }
+  function hubBackBtn(list){
+    const b=document.createElement("button"); b.className="hubcard hub-back";
+    b.textContent="← "+(CUR.hubTitle||"길목");
+    b.addEventListener("click",()=>{ hubPath=null; buildHub(); });
+    list.appendChild(b);
+  }
+  function pathCard(list, path, icon, title, sub, soon){
+    const c=document.createElement("button"); c.className="hubcard pathcard"+(soon?" soon":"");
+    c.innerHTML=icon+" "+title+(sub?' <span class="hubcount'+(soon?" story":"")+'">'+sub+'</span>':'');
+    if(soon) c.disabled=true; else c.addEventListener("click",()=>{ hubPath=path; buildHub(); });
+    list.appendChild(c);
+  }
+  function renderLanding(list){
+    const r=towerResume();   // 히어로 — 이어하기(타워 진행 중일 때만)
+    if(r){
+      const rc=document.createElement("button"); rc.className="hubcard hero-resume";
+      rc.innerHTML="▶ "+(CUR.resumeLabel||"이어하기")+' <span class="hubcount">'+(CUR[r.titleKey]||r.id)+'</span>';
+      rc.addEventListener("click",()=>{ startScenario(r.id); showView("play"); });
+      list.appendChild(rc);
     }
-    // 시리즈별 섹션: 헤더 + 그 항해 카드들 + 그 시리즈의 단편(📖). 각 시리즈가 독립 확장.
+    const tc=towerCleared();   // 갈래 카드들
+    pathCard(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"));
+    pathCard(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.done+" / "+tc.total);
+    pathCard(list,"daily","✦",CUR.pathDaily||"별자리", CUR.comingLabel||"곧", true);
+  }
+  function renderTower(list){
     Object.values(SERIES).forEach(series=>{
-      const head=document.createElement("div"); head.className="series-head";
-      head.textContent=CUR[series.titleKey]||series.id; list.appendChild(head);
-      if(series.quiz){
-        const ids=series.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
-        const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
-        const groups = series.groups || [{ scenarios: ids }];   // 2단 계층: (층) 그룹 헤더 + 하위 층 카드들
-        groups.forEach(g=>{
-          if(g.titleKey){ const gh=document.createElement("div"); gh.className="tower-group-head"; gh.textContent=CUR[g.titleKey]||g.titleKey; list.appendChild(gh); }
-          (g.scenarios||[]).forEach(scid=>{
-            const sc=SCENARIOS[scid]; if(!sc) return;
-            const card=towerCard(sc, series); if(g.titleKey) card.classList.add("tower-sub");
-            list.appendChild(card);
-          });
-        });
-        return;
-      }
-      // 비-퀴즈 시리즈: 평평한 항해 카드들 + 단편(📖)
-      (series.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(towerCard(sc, series)); });
-      // 그 시리즈의 단편들(각 📖 + 하위 매듭 들여쓰기). 소설-먼저 = 항해는 매듭으로만.
+      if(!series.quiz) return;
+      const ids=series.scenarios||[], cleared=ids.filter(id=>SAVE.scenarios[id]&&SAVE.scenarios[id].cleared).length;
+      const prog=document.createElement("div"); prog.className="tower-progress"; prog.textContent=(CUR.towerProgress||"Current")+" "+cleared+" / "+ids.length; list.appendChild(prog);
+      const groups = series.groups || [{ scenarios: ids }];   // 2단 계층: (층) 그룹 헤더 + 하위 층 카드들
+      groups.forEach(g=>{
+        if(g.titleKey){ const gh=document.createElement("div"); gh.className="tower-group-head"; gh.textContent=CUR[g.titleKey]||g.titleKey; list.appendChild(gh); }
+        (g.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(!sc) return; const card=hubCard(sc, series); if(g.titleKey) card.classList.add("tower-sub"); list.appendChild(card); });
+      });
+    });
+  }
+  function renderStories(list){
+    Object.values(SERIES).forEach(series=>{
+      if(series.quiz) return;
+      const head=document.createElement("div"); head.className="series-head"; head.textContent=CUR[series.titleKey]||series.id; list.appendChild(head);
+      (series.scenarios||[]).forEach(scid=>{ const sc=SCENARIOS[scid]; if(sc) list.appendChild(hubCard(sc, series)); });
       (series.stories||[]).forEach((story, si)=>{
         if(!CUR[story.textKey]) return;
         const keys = story.knots ? Object.keys(story.knots) : [];
@@ -342,7 +377,6 @@ const $ = id => document.getElementById(id);
           (keys.length?' <span class="hubcount'+(knotsDone>=keys.length?' full':'')+'">('+knotsDone+'/'+keys.length+')</span>':'');
         book.addEventListener("click",()=>openBook(series.id, si));
         list.appendChild(book);
-        // 단편 하위로 매듭 트릭 들여쓰기(구조 가시화 + 직접 점프 + 완료/개수)
         keys.forEach(key=>{
           const k=story.knots[key], sc=SCENARIOS[k.scid]; if(!sc) return;
           const c=knotCount(k.scid);
@@ -355,6 +389,11 @@ const $ = id => document.getElementById(id);
       });
     });
   }
+  function renderDaily(list){
+    const d=document.createElement("div"); d.className="series-soon"; d.textContent=CUR.dailySoon||"오늘의 별자리 — 곧 펼쳐집니다";
+    list.appendChild(d);
+  }
+  function goHub(){ hubPath=null; goHub(); }   // 어디서든 길목 랜딩으로
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
     const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
@@ -508,14 +547,14 @@ const $ = id => document.getElementById(id);
   /* ===== 초기화 ===== */
   applyLang(detectLang());
   startScenario("tutorial");
-  if(!SAVE.seenTutorial){ showView("gate"); } else { buildHub(); showView("hub"); }   // 첫 방문=게이트, 기존=항구
+  if(!SAVE.seenTutorial){ showView("gate"); } else { goHub(); }   // 첫 방문=게이트, 기존=항구
   $("menuBtn").addEventListener("click",()=>{
     if($("hub").style.display!=="none"){ showView("play"); }   // 이미 열림 → 닫고 플레이로(토글)
-    else { buildHub(); showView("hub"); }
+    else { goHub(); }
   });
   $("gateYes").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); openBook("boatman",0); });   // 「손을 배우는 밤」부터(튜토리얼 매듭 포함)
-  $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); buildHub(); showView("hub"); });
-  { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ buildHub(); showView("hub"); }); }
+  $("gateNo").addEventListener("click",()=>{ SAVE.seenTutorial=true; persist(); goHub(); });
+  { const bk=$("bookBack"); if(bk) bk.addEventListener("click",()=>{ goHub(); }); }
   $("resetBtn").addEventListener("click",()=>{
     stopMic(); resetLevels();
     const _st=scenarioState(); _st.step=0; _st.cleared=false; persist(); show(0);
@@ -529,7 +568,7 @@ const $ = id => document.getElementById(id);
     }); }
   { const bb=$("backHarborBtn"); if(bb) bb.addEventListener("click",()=>{
       if(fromStory){ fromStory=false; returnToStory(); }   // 소설 매듭 → 이야기의 그 자리로 복귀
-      else { buildHub(); showView("hub"); }
+      else { goHub(); }
     }); }
 
   /* 제스처로 답이 드러나는 레벨(L1/L3/L5)은 타이핑 없이 — 드러나면 3초 여운 후 자동 진행 (상태는 상단 선언) */
