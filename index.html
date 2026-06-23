@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>건너편 · Yonderkeep</title>
-<link rel="stylesheet" href="styles.css?v=06231811" />
+<link rel="stylesheet" href="styles.css?v=06231822" />
 </head>
 <body>
 <div class="wrap">
@@ -158,6 +158,26 @@
     </div>
     <div id="star-reveal"></div>
     <div class="hint" id="star-hint"></div>
+  </section>
+
+  <!-- A7 : 마루(Summit) — 흔들어 별자리를 빚고, 닻을 잡은 채 한 획으로 잇기(종합 보스) -->
+  <section class="level" id="lvSummit">
+    <div class="tag" id="summit-tag"></div>
+    <div class="riddle" id="summit-riddle"></div>
+    <div class="holdfast">
+      <button class="hold-pad" id="summitPad"><span id="summitPadLabel"></span></button>
+      <div class="hold-route">
+        <canvas id="summitCanvas"></canvas>
+        <button class="hold-lock" id="summitLockBtn"><span id="summitLockLabel"></span></button>
+      </div>
+      <div class="gauge" id="summitGauge"></div>
+      <div class="summit-shake">
+        <button class="sensorBtn" id="summitShakeBtn"></button>
+        <button class="balance-btn" id="summitShakeFb" style="display:none"></button>
+      </div>
+    </div>
+    <div id="summit-reveal"></div>
+    <div class="hint" id="summit-hint"></div>
   </section>
 
   <!-- A3 : 톱니(Cogwork) — 두 손가락으로 비틀어 다이얼 맞추기 -->
@@ -341,9 +361,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=06231811"></script>
-<script src="scenarios.js?v=06231811"></script>
-<script src="engine.js?v=06231811"></script>
-<script src="version.js?v=06231811"></script>
+<script src="levels.js?v=06231822"></script>
+<script src="scenarios.js?v=06231822"></script>
+<script src="engine.js?v=06231822"></script>
+<script src="version.js?v=06231822"></script>
 </body>
 </html>

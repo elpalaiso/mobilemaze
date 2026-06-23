@@ -125,6 +125,11 @@ const $ = id => document.getElementById(id);
     stardust: { init:stardustInit, cleanup:stardustCleanup, reset:stardustReset, bind:(lv)=>{ const t=lv.text||{};
       starLevel=lv; stardustReset(); setT("star-tag",CUR[t.tag]); setT("star-riddle",CUR[t.riddle]); setT("star-hint",CUR[t.hint]);
       setT("starShakeBtn",CUR.starShakeBtn); setT("starShakeFb",CUR.starShakeFb); setT("starGauge",CUR.starPrefix+"0%"); setT("star-reveal",CUR[t.reveal]); } },
+    summit:   { init:summitInit, cleanup:summitCleanup, reset:summitReset, bind:(lv)=>{ const t=lv.text||{};
+      summitLevel=lv; summitReset(); setT("summit-tag",CUR[t.tag]); setT("summit-riddle",CUR[t.riddle]); setT("summit-hint",CUR[t.hint]);
+      setT("summitPadLabel",CUR.holdPadLabel); setT("summitLockLabel",CUR.holdLockLabel);
+      setT("summitShakeBtn",CUR.starShakeBtn); setT("summitShakeFb",CUR.starShakeFb);
+      setT("summitGauge",CUR.summitShakePrefix+"0%"); setT("summit-reveal",CUR[t.reveal]); } },
     twist:    { init:twistInit, cleanup:twistCleanup, reset:twistReset, bind:(lv)=>{ const t=lv.text||{};
       twistReset(); setT("dial-tag",CUR[t.tag]); setT("dial-riddle",CUR[t.riddle]); setT("dial-hint",CUR[t.hint]);
       setT("dialGauge",CUR.dialPrefix+"0%"); setT("dial-reveal",CUR[t.reveal]); } },
@@ -260,7 +265,7 @@ const $ = id => document.getElementById(id);
   }
   function startScenario(id, fresh){
     fromStory=false;          // 기본은 허브 경유 — openKnot가 호출 후 true로 덮음
-    stopMic(); flameStop(); holdfastCleanup(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
+    stopMic(); flameStop(); holdfastCleanup(); summitCleanup(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
@@ -405,6 +410,16 @@ const $ = id => document.getElementById(id);
   const STAR_SHAKE_NEED = 6;     // A2 수렴까지 필요한 흔들기 누적 — 키우면 더 많이 흔들어야(빡셈)
   const STAR_HIT_R = 24;         // A2 별 잇기 인식 반경(px)
   const STAR_SCATTER = 0.42;     // A2 초기 산포 — stardustReset(init)가 읽으므로 반드시 resetLevels보다 먼저(TDZ)
+  let summitLevel=null, summitCanvas=null, summitCtx=null, summitPad=null, summitLockBtn=null, summitGauge=null;  // A7 마루(종합 보스: 빚기+점유+감쇠)
+  let summitDots=[], summitStroke=[], summitDone=false, summitConverged=false, summitShakeE=0;
+  let summitActive=false, summitLocked=false, summitId=null, summitDrawId=null, summitRaf=null, summitBound=false, summitListeners=[];
+  let summitGotMotion=false, summitLastMag=0, summitMotionTimer=null;
+  const SUMMIT_TARGET = [ {x:0.16,y:0.64},{x:0.34,y:0.30},{x:0.50,y:0.56},{x:0.66,y:0.26},{x:0.84,y:0.58},{x:0.50,y:0.82} ];  // A7 별자리 목표 — summitReset가 init때 읽음(resetLevels보다 먼저, TDZ)
+  const SUMMIT_SHAKE_NEED = 7;   // A7 수렴까지 흔들기 누적(보스라 A2보다 약간↑)
+  const SUMMIT_HIT_R = 24;       // A7 별 잇기 인식 반경(px)
+  const SUMMIT_SCATTER = 0.40;   // A7 초기 산포 — summitReset(init)가 읽으므로 반드시 resetLevels보다 먼저(TDZ)
+  const SUMMIT_DECAY = 1.6;      // A7 감쇠율(보스라 A4의 1.35보다 빡셈)
+  const SUMMIT_MIN_STROKE = 2;
   let dialCanvas=null, dialCtx=null, dialAngle=0, dialTarget=0, dialHoldMs=0, dialDone=false, dialRaf=null, dialBound=false, dialListeners=[], dialPtrs=new Map(), dialLastAng=null, dialLastTs=0;  // A3 톱니(twist)
   const TWIST_TARGET=140, TWIST_TOL=12, TWIST_HOLD_MS=800;  // A3 — twistReset(init)가 TWIST_TARGET 읽음 → 상단(TDZ 방지)
   let gateTarget=0, gatePressIdx=-1, gatePressStart=0, gateRaf=null, gateDone=false, gateBound=false;  // A1 문간(gate)
@@ -438,6 +453,7 @@ const $ = id => document.getElementById(id);
     holdfastReset();                                  // A4
     tightropeReset();                                 // A6
     stardustReset();                                  // A2
+    summitReset();                                    // A7 마루
     twistReset();                                     // A3
     gateReset();                                      // A1
     tideReset();                                      // A5
@@ -1100,6 +1116,146 @@ const $ = id => document.getElementById(id);
       starCtx.beginPath(); starCtx.arc(sx,sy, s.hit?6:(starConverged?5:3), 0, 7);
       starCtx.fillStyle = s.hit ? "#e3a542" : (starConverged ? "#f0c56b" : "#3a4663"); starCtx.fill();
     });
+  }
+
+  /* ===== A7 — 마루(Summit): 종합 보스 = 흔들어 별자리를 빚고(A2 빚기) → 닻을 잡은 채(A4 점유)
+     한 획으로 잇되, 닻을 놓으면 그은 선이 감쇠해 사라진다(감쇠). 두 히어로 메커닉의 합성.
+     ⚠️ SUMMIT_TARGET/SCATTER 등 상수는 상단(STAR 옆)에 선언 — summitReset가 init때 읽으므로 TDZ 방지 ===== */
+  function summitInit(){
+    summitCanvas=$("summitCanvas"); summitPad=$("summitPad"); summitLockBtn=$("summitLockBtn"); summitGauge=$("summitGauge");
+    if(!summitCanvas || !summitPad || !summitLockBtn) return;
+    summitCtx=summitCanvas.getContext("2d");
+    if(!summitBound){
+      const on=(el,t,fn,opt)=>{ el.addEventListener(t,fn,opt); summitListeners.push([el,t,fn,opt]); };
+      const padDown=e=>{ e.preventDefault(); if(summitId===null){ summitId=e.pointerId; summitActive=true; try{ summitPad.setPointerCapture(e.pointerId); }catch(_){} summitRender(); } };
+      const padEnd=e=>{ if(e.pointerId===summitId){ summitId=null; summitActive=false; try{ summitPad.releasePointerCapture(e.pointerId); }catch(_){} summitRender(); } };
+      const canvasDown=e=>{ if(summitDone || summitDrawId!==null || !summitConverged) return; e.preventDefault(); summitDrawId=e.pointerId; try{ summitCanvas.setPointerCapture(e.pointerId); }catch(_){} summitAdd(e); };
+      const canvasMove=e=>{ if(e.pointerId===summitDrawId){ e.preventDefault(); summitAdd(e); } };
+      const canvasEnd=e=>{ if(e.pointerId===summitDrawId){ summitDrawId=null; try{ summitCanvas.releasePointerCapture(e.pointerId); }catch(_){} } };
+      const lock=e=>{ e.preventDefault(); summitLocked=!summitLocked; summitRender(); };
+      on(summitPad,"pointerdown",padDown);
+      on(summitPad,"pointerup",padEnd); on(summitPad,"pointercancel",padEnd); on(summitPad,"lostpointercapture",padEnd);
+      on(summitCanvas,"pointerdown",canvasDown); on(summitCanvas,"pointermove",canvasMove);
+      on(summitCanvas,"pointerup",canvasEnd); on(summitCanvas,"pointercancel",canvasEnd); on(summitCanvas,"lostpointercapture",canvasEnd);
+      on(summitLockBtn,"click",lock);
+      const sb=$("summitShakeBtn"); if(sb) on(sb,"click",summitEnable);
+      const fb=$("summitShakeFb"); if(fb) on(fb,"click",()=>summitShake(2.4));   // 폴백: 탭으로 흔들기(센서 없는 기기)
+      summitBound=true;
+    }
+    summitSize(); summitRender();
+    if(typeof DeviceMotionEvent==="undefined") summitShowFallback();
+    else if(typeof DeviceMotionEvent.requestPermission!=="function") window.addEventListener("devicemotion",summitOnMotion);
+    clearTimeout(summitMotionTimer);
+    summitMotionTimer=setTimeout(()=>{ if(!summitGotMotion && !summitConverged) summitShowFallback(); },4000);
+    summitStop(); summitRaf=requestAnimationFrame(summitLoop);
+  }
+  function summitEnable(){
+    if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+      DeviceMotionEvent.requestPermission().then(p=>{
+        if(p==="granted"){ window.addEventListener("devicemotion",summitOnMotion); const b=$("summitShakeBtn"); if(b) b.style.display="none"; }
+        else summitShowFallback();
+      }).catch(summitShowFallback);
+    } else {
+      window.addEventListener("devicemotion",summitOnMotion);
+      const b=$("summitShakeBtn"); if(b) b.style.display="none";
+    }
+  }
+  function summitShowFallback(){ const fb=$("summitShakeFb"); if(fb) fb.style.display=""; const b=$("summitShakeBtn"); if(b) b.style.display="none"; }
+  function summitOnMotion(e){
+    summitGotMotion=true;
+    const a=e.accelerationIncludingGravity||e.acceleration||{x:0,y:0,z:0};
+    const mag=Math.hypot(a.x||0,a.y||0,a.z||0);
+    const d=Math.abs(mag-summitLastMag); summitLastMag=mag;
+    if(d>3.2) summitShake(d/8);
+  }
+  function summitShake(amt){
+    if(summitConverged||summitDone) return;
+    summitShakeE=Math.min(SUMMIT_SHAKE_NEED, summitShakeE+amt);
+    const t=summitShakeE/SUMMIT_SHAKE_NEED;
+    summitDots.forEach(d=>{ d.x=d.x0+(d.tx-d.x0)*t; d.y=d.y0+(d.ty-d.y0)*t; });   // 흔들수록 목표로 수렴
+    if(summitShakeE>=SUMMIT_SHAKE_NEED){ summitConverged=true; summitDots.forEach(d=>{ d.x=d.tx; d.y=d.ty; }); haptic([0,60,30,60]); const b=$("summitShakeBtn"); if(b) b.style.display="none"; const fb=$("summitShakeFb"); if(fb) fb.style.display="none"; }
+    else haptic(6);
+    summitRender();
+  }
+  function summitStop(){ if(summitRaf){ cancelAnimationFrame(summitRaf); summitRaf=null; } }
+  function summitCleanup(){
+    summitStop();
+    window.removeEventListener("devicemotion",summitOnMotion);
+    if(summitMotionTimer){ clearTimeout(summitMotionTimer); summitMotionTimer=null; }
+    summitListeners.forEach(([el,t,fn,opt])=>el.removeEventListener(t,fn,opt));
+    summitListeners=[]; summitBound=false; summitId=null; summitDrawId=null; summitActive=false;
+  }
+  function summitSize(){ if(!summitCanvas) return; summitCanvas.width=summitCanvas.clientWidth||320; summitCanvas.height=220; }
+  function summitResetDots(){
+    const src=(summitLevel && summitLevel.stars) || SUMMIT_TARGET;
+    summitDots=src.map(p=>{
+      const ox=(Math.random()-0.5)*SUMMIT_SCATTER, oy=(Math.random()-0.5)*SUMMIT_SCATTER;
+      const x0=Math.max(0.06,Math.min(0.94,p.x+ox)), y0=Math.max(0.10,Math.min(0.90,p.y+oy));
+      return { tx:p.x, ty:p.y, x0, y0, x:x0, y:y0, hit:false };
+    });
+  }
+  function summitReset(){
+    summitStop(); summitResetDots(); summitStroke=[]; summitDone=false; summitConverged=false; summitShakeE=0;
+    summitActive=false; summitLocked=false; summitId=null; summitDrawId=null; summitGotMotion=false; summitLastMag=0;
+    const rv=$("summit-reveal"); if(rv) rv.classList.remove("show");
+    const b=$("summitShakeBtn"); if(b) b.style.display="";
+    const fb=$("summitShakeFb"); if(fb) fb.style.display="none";
+    if(summitGauge){ summitGauge.classList.remove("done"); summitGauge.textContent=CUR.summitShakePrefix+"0%"; }
+    summitRender();
+  }
+  function summitIsKept(){ return summitActive || summitLocked; }
+  function summitAdd(e){
+    if(summitDone || !summitCanvas || !summitConverged || !summitIsKept()) return;
+    const r=summitCanvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
+    summitStroke.push({x,y});
+    summitDots.forEach(s=>{ const sx=s.x*summitCanvas.width, sy=s.y*summitCanvas.height; if(!s.hit && Math.hypot(x-sx,y-sy)<SUMMIT_HIT_R){ s.hit=true; haptic(8); } });
+    if(summitDots.length && summitDots.every(s=>s.hit)) summitComplete();
+    else summitRender();
+  }
+  function summitRehit(){
+    summitDots.forEach(s=>s.hit=false);
+    summitStroke.forEach(p=>summitDots.forEach(s=>{ const sx=s.x*summitCanvas.width, sy=s.y*summitCanvas.height; if(Math.hypot(p.x-sx,p.y-sy)<SUMMIT_HIT_R) s.hit=true; }));
+  }
+  function summitLoop(){
+    if(!summitDone){
+      if(summitConverged && !summitIsKept() && summitStroke.length){     // 닻 놓으면 그은 선 감쇠
+        const n=Math.max(SUMMIT_MIN_STROKE, Math.ceil(SUMMIT_DECAY));
+        summitStroke.splice(Math.max(0, summitStroke.length-n), n);
+        summitRehit();
+      }
+      summitRender();
+      summitRaf=requestAnimationFrame(summitLoop);
+    }
+  }
+  function summitComplete(){
+    if(summitDone || !summitIsKept()) return;
+    summitDone=true; haptic([0,80,40,120]);
+    const rv=$("summit-reveal"); if(rv) rv.classList.add("show");
+    if(summitGauge){ summitGauge.textContent=CUR.summitSet; summitGauge.classList.add("done"); }
+    summitRender(); summitStop(); revealAdvance();
+  }
+  function summitRender(){
+    if(summitPad) summitPad.classList.toggle("on", !!summitActive);
+    if(summitLockBtn) summitLockBtn.classList.toggle("on", !!summitLocked);
+    if(!summitCtx || !summitCanvas) return;
+    const w=summitCanvas.width, h=summitCanvas.height;
+    summitCtx.clearRect(0,0,w,h);
+    const kept=summitIsKept();
+    if(summitStroke.length>1){
+      summitCtx.strokeStyle=kept ? "rgba(227,165,66,.68)" : "rgba(191,88,48,.35)";
+      summitCtx.lineWidth=3; summitCtx.lineCap="round"; summitCtx.lineJoin="round";
+      summitCtx.beginPath(); summitStroke.forEach((p,i)=> i?summitCtx.lineTo(p.x,p.y):summitCtx.moveTo(p.x,p.y)); summitCtx.stroke();
+    }
+    summitDots.forEach(s=>{
+      const sx=s.x*w, sy=s.y*h;
+      if(s.hit){ summitCtx.beginPath(); summitCtx.arc(sx,sy,12,0,7); summitCtx.strokeStyle="rgba(227,165,66,.42)"; summitCtx.lineWidth=2; summitCtx.stroke(); }
+      summitCtx.beginPath(); summitCtx.arc(sx,sy, s.hit?6:(summitConverged?5:3), 0, 7);
+      summitCtx.fillStyle = s.hit ? "#e3a542" : (summitConverged ? (kept?"#f0c56b":"#4b5878") : "#2c3448"); summitCtx.fill();
+    });
+    if(summitGauge && !summitDone){
+      if(!summitConverged) summitGauge.textContent=CUR.summitShakePrefix+Math.round(summitShakeE/SUMMIT_SHAKE_NEED*100)+"%";
+      else { const pct=summitDots.length ? Math.round(summitDots.filter(s=>s.hit).length/summitDots.length*100) : 0; summitGauge.textContent=(kept ? CUR.summitPrefix : CUR.summitDecayPrefix)+pct+"%"; }
+    }
   }
 
   /* ===== A3 — 톱니(Cogwork): 두 손가락으로 비틀어 다이얼을 목표 각도에 맞춰 유지(회전 협응) ===== */

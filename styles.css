@@ -79,6 +79,12 @@
   #hold-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
     font-size:18px; letter-spacing:.05em; margin-top:12px; }
   #hold-reveal.show{ opacity:1; }
+  #summitCanvas{ display:block; width:100%; height:220px; background:#080c14;
+    border:1px solid var(--line); border-radius:12px; touch-action:none; }
+  #lvSummit .summit-shake{ grid-column:1 / -1; }
+  #summit-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
+    font-size:18px; letter-spacing:.05em; margin-top:12px; }
+  #summit-reveal.show{ opacity:1; }
   /* A5 물때(Tide) — 숨 세기를 중앙 띠 안에 유지 */
   .tidebox{ background:#0b0f1a; border:1px solid var(--line); border-radius:12px;
     padding:18px 14px; user-select:none; -webkit-user-select:none; }
