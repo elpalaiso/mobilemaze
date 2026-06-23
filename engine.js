@@ -131,6 +131,9 @@ const $ = id => document.getElementById(id);
     gate:     { init:gateInit, cleanup:gateCleanup, reset:gateReset, bind:(lv)=>{ const t=lv.text||{};
       gateTarget=lv.gateTarget||0; gateReset();
       setT("gate-tag",CUR[t.tag]); setT("gate-riddle",CUR[t.riddle]); setT("gate-hint",CUR[t.hint]); setT("gate-reveal",CUR[t.reveal]); } },
+    tide:     { init:tideInit, cleanup:tideStop, reset:tideReset, bind:(lv)=>{ const t=lv.text||{};
+      tideReset(); setT("tide-tag",CUR[t.tag]); setT("tide-riddle",CUR[t.riddle]); setT("tide-hint",CUR[t.hint]);
+      setT("tideBtn",CUR.tideBtn); setT("tideFb",CUR.tideFb); setT("tide-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -406,6 +409,8 @@ const $ = id => document.getElementById(id);
   const TWIST_TARGET=140, TWIST_TOL=12, TWIST_HOLD_MS=800;  // A3 — twistReset(init)가 TWIST_TARGET 읽음 → 상단(TDZ 방지)
   let gateTarget=0, gatePressIdx=-1, gatePressStart=0, gateRaf=null, gateDone=false, gateBound=false;  // A1 문간(gate)
   const GATE_HOLD_MS=650;  // A1 정답 패드 길게누르기 시간
+  let tideCtx=null, tideStream=null, tideRaf=null, tideLevel=0, tideHold=0, tideDone=false, tideBound=false, tideFallback=false, tideFallbackHold=false, tideLastTs=0;  // A5 물때(tide)
+  const TIDE_LOW=42, TIDE_HIGH=70, TIDE_HOLD_MS=2600;  // A5 — tideReset/init가 읽으므로 resetLevels보다 먼저(TDZ 방지)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -435,6 +440,7 @@ const $ = id => document.getElementById(id);
     stardustReset();                                  // A2
     twistReset();                                     // A3
     gateReset();                                      // A1
+    tideReset();                                      // A5
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
@@ -1218,6 +1224,95 @@ const $ = id => document.getElementById(id);
     const rv=$("gate-reveal"); if(rv) rv.classList.remove("show");
   }
   function gateCleanup(){ if(gateRaf){ cancelAnimationFrame(gateRaf); gateRaf=null; } gatePressIdx=-1; }
+
+  /* ===== A5 — 물때(Tide): 숨 세기를 중앙 띠 안에 유지한다 ===== */
+  function tideBox(){ return $("lvTide") && $("lvTide").querySelector(".tidebox"); }
+  function tideRender(){
+    const fill=$("tideFill"), orb=$("tideOrb"), box=tideBox(), gauge=$("tideGauge");
+    const pct=Math.max(0,Math.min(100,tideLevel));
+    if(fill) fill.style.width=pct+"%";
+    if(orb) orb.style.transform="scale("+(0.78+pct*0.004).toFixed(2)+")";
+    const inBand=pct>=TIDE_LOW && pct<=TIDE_HIGH, tooHigh=pct>TIDE_HIGH;
+    if(box){ box.classList.toggle("in-band",inBand); box.classList.toggle("too-high",tooHigh); }
+    if(gauge && !tideDone) gauge.textContent=(CUR.tidePrefix||"tide: ")+Math.round(tideHold/TIDE_HOLD_MS*100)+"%";
+  }
+  function tideStop(){
+    if(tideRaf){ cancelAnimationFrame(tideRaf); tideRaf=null; }
+    if(tideStream){ tideStream.getTracks().forEach(t=>t.stop()); tideStream=null; }
+    if(tideCtx){ try{ tideCtx.close(); }catch(e){} tideCtx=null; }
+    tideFallbackHold=false;
+  }
+  function tideComplete(){
+    if(tideDone) return;
+    tideDone=true; haptic([0,80,40,120]); tideStop();
+    const rv=$("tide-reveal"); if(rv) rv.classList.add("show");
+    const g=$("tideGauge"); if(g){ g.textContent=CUR.tideSet; g.classList.add("done"); }
+    setTimeout(advance,1600);
+  }
+  function tideTick(input,ts){
+    if(tideDone) return;
+    const dt=Math.min(40,tideLastTs ? ts-tideLastTs : 16); tideLastTs=ts;
+    if(tideFallback) tideLevel += (tideFallbackHold ? 1.8 : -0.9) * (dt/16);
+    else tideLevel += (input - tideLevel) * 0.18;
+    tideLevel=Math.max(0,Math.min(100,tideLevel));
+    if(tideLevel>=TIDE_LOW && tideLevel<=TIDE_HIGH) tideHold=Math.min(TIDE_HOLD_MS,tideHold+dt);
+    else if(tideLevel>TIDE_HIGH) tideHold=Math.max(0,tideHold-dt*2.4);
+    else tideHold=Math.max(0,tideHold-dt*.7);
+    tideRender();
+    if(tideHold>=TIDE_HOLD_MS) tideComplete();
+  }
+  async function tideStart(){
+    try{
+      tideStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      tideCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if(tideCtx.state==="suspended") await tideCtx.resume();
+      const src=tideCtx.createMediaStreamSource(tideStream), analyser=tideCtx.createAnalyser();
+      analyser.fftSize=512; src.connect(analyser);
+      const data=new Uint8Array(analyser.frequencyBinCount);
+      const b=$("tideBtn"); if(b) b.style.display="none";
+      (function loop(ts){
+        analyser.getByteFrequencyData(data);
+        let sum=0, n=24; for(let i=2;i<2+n;i++) sum+=data[i];
+        const lvl=Math.max(0,Math.min(100,((sum/n)-28)*1.15));
+        tideTick(lvl,ts||performance.now());
+        if(!tideDone) tideRaf=requestAnimationFrame(loop);
+      })();
+    }catch(e){
+      tideShowFallback();
+    }
+  }
+  function tideShowFallback(){
+    tideFallback=true;
+    const b=$("tideBtn"), fb=$("tideFb");
+    if(b) b.style.display="none";
+    if(fb) fb.style.display="";
+    tideLastTs=0;
+    if(!tideRaf){
+      const loop=ts=>{ tideTick(0,ts); if(!tideDone) tideRaf=requestAnimationFrame(loop); };
+      tideRaf=requestAnimationFrame(loop);
+    }
+  }
+  function tideInit(){
+    if(!tideBound){
+      tideBound=true;
+      const b=$("tideBtn"), fb=$("tideFb");
+      if(b) b.addEventListener("click",tideStart);
+      if(fb){
+        fb.addEventListener("pointerdown",e=>{ e.preventDefault(); tideFallbackHold=true; });
+        ["pointerup","pointercancel","pointerleave"].forEach(ev=>fb.addEventListener(ev,()=>{ tideFallbackHold=false; }));
+      }
+    }
+    tideRender();
+  }
+  function tideReset(){
+    tideStop(); tideLevel=0; tideHold=0; tideDone=false; tideFallback=false; tideLastTs=0;
+    const rv=$("tide-reveal"); if(rv) rv.classList.remove("show");
+    const b=$("tideBtn"), fb=$("tideFb"), g=$("tideGauge");
+    if(b) b.style.display="";
+    if(fb) fb.style.display="none";
+    if(g){ g.classList.remove("done"); g.textContent=(CUR.tidePrefix||"tide: ")+"0%"; }
+    tideRender();
+  }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
      route와 달리 웨이포인트를 처음→끝 순서로 통과해야 한다(길이니까). 마지막 점=떠나는 사람. 완주 시

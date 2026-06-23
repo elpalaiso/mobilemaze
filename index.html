@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>건너편 · Yonderkeep</title>
-<link rel="stylesheet" href="styles.css?v=06231725" />
+<link rel="stylesheet" href="styles.css?v=06231731" />
 </head>
 <body>
 <div class="wrap">
@@ -106,6 +106,24 @@
     </div>
     <div id="hold-reveal"></div>
     <div class="hint" id="hold-hint"></div>
+  </section>
+
+  <!-- A5 : 물때(Tide) — 숨을 너무 세지도 약하지도 않게 띠 안에 머물게 하기 -->
+  <section class="level" id="lvTide">
+    <div class="tag" id="tide-tag"></div>
+    <div class="riddle" id="tide-riddle"></div>
+    <div class="tidebox">
+      <div class="tide-orb" id="tideOrb"></div>
+      <div class="tide-meter">
+        <i class="tide-band"></i>
+        <div class="fill" id="tideFill"></div>
+      </div>
+      <div class="gauge" id="tideGauge"></div>
+      <button class="sensorBtn" id="tideBtn"></button>
+      <button class="balance-btn" id="tideFb" style="display:none"></button>
+    </div>
+    <div id="tide-reveal"></div>
+    <div class="hint" id="tide-hint"></div>
   </section>
 
   <!-- A6 : 외줄(Tightrope) — 기울여 균형 잡으며 별을 순서대로 탭하기 -->
@@ -323,9 +341,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=06231725"></script>
-<script src="scenarios.js?v=06231725"></script>
-<script src="engine.js?v=06231725"></script>
-<script src="version.js?v=06231725"></script>
+<script src="levels.js?v=06231731"></script>
+<script src="scenarios.js?v=06231731"></script>
+<script src="engine.js?v=06231731"></script>
+<script src="version.js?v=06231731"></script>
 </body>
 </html>

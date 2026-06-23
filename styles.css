@@ -79,6 +79,21 @@
   #hold-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
     font-size:18px; letter-spacing:.05em; margin-top:12px; }
   #hold-reveal.show{ opacity:1; }
+  /* A5 물때(Tide) — 숨 세기를 중앙 띠 안에 유지 */
+  .tidebox{ background:#0b0f1a; border:1px solid var(--line); border-radius:12px;
+    padding:18px 14px; user-select:none; -webkit-user-select:none; }
+  .tide-orb{ width:72px; height:72px; margin:0 auto 16px; border-radius:50%;
+    background:radial-gradient(circle at 42% 35%, #f0c56b, #83602d 55%, #1a2032 78%);
+    transform:scale(.82); opacity:.55; transition:transform .12s, opacity .12s; }
+  .tide-meter{ position:relative; height:18px; background:var(--line); border-radius:10px; overflow:hidden; }
+  .tide-meter .fill{ position:absolute; left:0; top:0; height:100%; width:0%; background:#3a4663; transition:width .08s; }
+  .tide-band{ position:absolute; left:42%; width:28%; top:0; bottom:0; background:rgba(227,165,66,.30); z-index:1; }
+  .tidebox.in-band .tide-meter .fill{ background:var(--accent); }
+  .tidebox.in-band .tide-orb{ opacity:1; }
+  .tidebox.too-high .tide-meter .fill{ background:var(--bad); }
+  #tide-reveal{ opacity:0; transition:opacity .3s; color:var(--accent); text-align:center;
+    font-size:18px; letter-spacing:.05em; margin-top:12px; }
+  #tide-reveal.show{ opacity:1; }
   /* A6 외줄(Tightrope) — 기울임 + 긋기 동시 */
   .tightrope{ background:#0b0f1a; border:1px solid var(--line); border-radius:12px;
     padding:14px; touch-action:none; user-select:none; -webkit-user-select:none; }
