@@ -245,7 +245,7 @@
   .hub-back{ color:var(--dim); background:transparent; border-color:#222a3d; font-size:13px; padding:9px 14px; margin-bottom:6px; }
   .acc-chev{ display:inline-block; width:.9em; color:var(--accent); opacity:.85; }
   .acc-head.open{ border-color:var(--accent); background:#181c2c; }
-  .acc-body{ margin:2px 0 12px 12px; padding-left:10px; border-left:1px solid #222a3d; }
+  .acc-body{ display:flex; flex-direction:column; gap:9px; margin:2px 0 12px 12px; padding-left:10px; border-left:1px solid #222a3d; }
   .acc-body .series-head{ margin:12px 0 8px; }
   .acc-body .series-head:first-child{ margin-top:4px; }
   .acc-body .tower-progress{ margin-top:2px; }
