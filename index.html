@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>건너편 · Yonderkeep</title>
-<link rel="stylesheet" href="styles.css?v=06231627" />
+<link rel="stylesheet" href="styles.css?v=06231645" />
 </head>
 <body>
 <div class="wrap">
@@ -126,6 +126,20 @@
     </div>
     <div id="rope-reveal"></div>
     <div class="hint" id="rope-hint"></div>
+  </section>
+
+  <!-- A2 : 별가루(Stardust) — 흔들어 별자리를 모으고 한 획으로 잇기 -->
+  <section class="level" id="lvStar">
+    <div class="tag" id="star-tag"></div>
+    <div class="riddle" id="star-riddle"></div>
+    <div class="tightrope">
+      <canvas id="starCanvas"></canvas>
+      <div class="gauge" id="starGauge"></div>
+      <button class="sensorBtn" id="starShakeBtn"></button>
+      <button class="balance-btn" id="starShakeFb" style="display:none"></button>
+    </div>
+    <div id="star-reveal"></div>
+    <div class="hint" id="star-hint"></div>
   </section>
 
   <!-- LEVEL 6 : 두 손가락 감싸기(등불 보살핌) — 2막 안개 -->
@@ -284,9 +298,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=06231627"></script>
-<script src="scenarios.js?v=06231627"></script>
-<script src="engine.js?v=06231627"></script>
-<script src="version.js?v=06231630"></script>
+<script src="levels.js?v=06231645"></script>
+<script src="scenarios.js?v=06231645"></script>
+<script src="engine.js?v=06231645"></script>
+<script src="version.js?v=06231645"></script>
 </body>
 </html>

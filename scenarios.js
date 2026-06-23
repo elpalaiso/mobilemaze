@@ -78,7 +78,7 @@ const SCENARIOS = {
     ending: { title:"qt1DoneTitle", body:"qt1DoneBody", end:"qt1DoneEnd" },
   },
   tower_a4: {
-    id: "tower_a4", titleKey: "sc_tower_a4", series:"tower", quiz:true, gate:"tower_t1",
+    id: "tower_a4", titleKey: "sc_tower_a4", series:"tower", quiz:true, gate:"tower_a2",
     levels: [
       { sec:"lvHold", trick:"holdfast",
         stars:[{x:0.15,y:0.72},{x:0.30,y:0.34},{x:0.48,y:0.62},{x:0.67,y:0.28},{x:0.86,y:0.54}],
@@ -86,6 +86,15 @@ const SCENARIOS = {
         hints:["qtA4aH1","qtA4aH2","qtA4aH3"] },
     ],
     ending: { title:"qtA4DoneTitle", body:"qtA4DoneBody", end:"qtA4DoneEnd" },
+  },
+  tower_a2: {
+    id: "tower_a2", titleKey: "sc_tower_a2", series:"tower", quiz:true, gate:"tower_t1",
+    levels: [
+      { sec:"lvStar", trick:"stardust",
+        text:{ tag:"qtA2Tag", riddle:"qtA2Riddle", hint:"qtA2Hint", reveal:"qtReveal" },
+        hints:["qtA2H1","qtA2H2","qtA2H3"] },
+    ],
+    ending: { title:"qtA2DoneTitle", body:"qtA2DoneBody", end:"qtA2DoneEnd" },
   },
   tower_a6: {
     id: "tower_a6", titleKey: "sc_tower_a6", series:"tower", quiz:true, gate:"tower_a4",
@@ -134,7 +143,7 @@ const SERIES = {
   tower: {
     id: "tower",
     titleKey: "seriesTower",
-    scenarios: ["tower_t1","tower_a4","tower_a6"],
+    scenarios: ["tower_t1","tower_a2","tower_a4","tower_a6"],
     novelFirst: false,
     quiz: true,
     stories: [],

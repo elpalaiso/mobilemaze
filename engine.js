@@ -122,6 +122,9 @@ const $ = id => document.getElementById(id);
       tightropeLevel=lv; tightropeReset(); setT("rope-tag",CUR[t.tag]); setT("rope-riddle",CUR[t.riddle]); setT("rope-hint",CUR[t.hint]);
       setT("ropeSensorBtn",CUR.ropeSensorBtn); setT("ropeLeftBtn",CUR.ropeLeftBtn); setT("ropeRightBtn",CUR.ropeRightBtn);
       setT("ropeGauge",CUR.ropePrefix+"0/"+ROPE_PTS.length); setT("rope-reveal",CUR[t.reveal]); } },
+    stardust: { init:stardustInit, cleanup:stardustCleanup, reset:stardustReset, bind:(lv)=>{ const t=lv.text||{};
+      starLevel=lv; stardustReset(); setT("star-tag",CUR[t.tag]); setT("star-riddle",CUR[t.riddle]); setT("star-hint",CUR[t.hint]);
+      setT("starShakeBtn",CUR.starShakeBtn); setT("starShakeFb",CUR.starShakeFb); setT("starGauge",CUR.starPrefix+"0%"); setT("star-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -383,6 +386,8 @@ const $ = id => document.getElementById(id);
   let ropeStars=[], ropeNext=0, ropeTapFlash=null, ropeCompleteDone=false, ropeRaf=null, ropeBound=false, ropeListeners=[];
   let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1, ropeBaseline=0;
   const ROPE_PTS = [ {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62} ];  // A6 — tightropeReset가 init때 읽으므로 resetLevels보다 먼저 선언(TDZ 방지)
+  let starLevel=null, starCanvas=null, starCtx=null, starDots=[], starStroke=[], starDrawing=false, starDone=false, starConverged=false, starShakeE=0, starBound=false, starListeners=[], starGotMotion=false, starLastMag=0, starMotionTimer=null;  // A2 별가루(shake)
+  const STAR_TARGET = [ {x:0.18,y:0.66},{x:0.36,y:0.30},{x:0.54,y:0.58},{x:0.72,y:0.30},{x:0.86,y:0.62} ];  // A2 별자리 목표 — stardustReset가 init때 읽음(resetLevels보다 먼저, TDZ)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -409,6 +414,7 @@ const $ = id => document.getElementById(id);
     routeReset();                                     // L5
     holdfastReset();                                  // A4
     tightropeReset();                                 // A6
+    stardustReset();                                  // A2
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
@@ -967,6 +973,109 @@ const $ = id => document.getElementById(id);
     const balancePct=Math.max(0,Math.min(100,Math.round((1-Math.abs(ropeX)/ROPE_LIMIT)*100)));
     if(ropeFill) ropeFill.style.width=balancePct+"%";
     if(ropeGauge && !ropeCompleteDone) ropeGauge.textContent=CUR.ropePrefix+ropeNext+"/"+ropeStars.length;
+  }
+
+  /* ===== A2 — 별가루(Stardust): 흔들어 흩어진 별을 별자리로 모은 뒤 한 획으로 잇는다(상태빚기) ===== */
+  const STAR_SHAKE_NEED = 6;     // 수렴까지 필요한 흔들기 누적 에너지 — 키우면 더 많이 흔들어야(빡셈)
+  const STAR_HIT_R = 24;         // 별 잇기 인식 반경(px)
+  const STAR_SCATTER = 0.42;     // 초기 산포 정도
+  function stardustInit(){
+    starCanvas=$("starCanvas"); if(!starCanvas) return;
+    starCtx=starCanvas.getContext("2d");
+    if(!starBound){
+      const on=(el,t,fn,opt)=>{ el.addEventListener(t,fn,opt); starListeners.push([el,t,fn,opt]); };
+      const down=e=>{ if(!starConverged||starDone) return; e.preventDefault(); starDrawing=true; starAdd(e); };
+      const move=e=>{ if(starDrawing){ e.preventDefault(); starAdd(e); } };
+      const up=()=>{ starDrawing=false; };
+      on(starCanvas,"pointerdown",down); on(starCanvas,"pointermove",move);
+      on(starCanvas,"pointerup",up); on(starCanvas,"pointerleave",up);
+      const sb=$("starShakeBtn"); if(sb) on(sb,"click",stardustEnable);
+      const fb=$("starShakeFb"); if(fb) on(fb,"click",()=>starShake(2.2));  // 폴백: 탭으로 흔들기(센서 없는 기기)
+      starBound=true;
+    }
+    starSize(); starRender();
+    if(typeof DeviceMotionEvent==="undefined") starShowFallback();
+    else if(typeof DeviceMotionEvent.requestPermission!=="function") window.addEventListener("devicemotion",stardustOnMotion);
+    clearTimeout(starMotionTimer);
+    starMotionTimer=setTimeout(()=>{ if(!starGotMotion) starShowFallback(); },4000);
+  }
+  function stardustEnable(){
+    if(typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function"){
+      DeviceMotionEvent.requestPermission().then(p=>{
+        if(p==="granted"){ window.addEventListener("devicemotion",stardustOnMotion); const b=$("starShakeBtn"); if(b) b.style.display="none"; }
+        else starShowFallback();
+      }).catch(starShowFallback);
+    } else {
+      window.addEventListener("devicemotion",stardustOnMotion);
+      const b=$("starShakeBtn"); if(b) b.style.display="none";
+    }
+  }
+  function starShowFallback(){ const fb=$("starShakeFb"); if(fb) fb.style.display=""; const b=$("starShakeBtn"); if(b) b.style.display="none"; }
+  function stardustOnMotion(e){
+    starGotMotion=true;
+    const a=e.accelerationIncludingGravity||e.acceleration||{x:0,y:0,z:0};
+    const mag=Math.hypot(a.x||0,a.y||0,a.z||0);
+    const d=Math.abs(mag-starLastMag); starLastMag=mag;
+    if(d>3.2) starShake(d/8);   // 흔들림 스파이크 → 에너지
+  }
+  function starShake(amt){
+    if(starConverged||starDone) return;
+    starShakeE=Math.min(STAR_SHAKE_NEED, starShakeE+amt);
+    const t=starShakeE/STAR_SHAKE_NEED;
+    starDots.forEach(d=>{ d.x=d.x0+(d.tx-d.x0)*t; d.y=d.y0+(d.ty-d.y0)*t; });   // 흔들수록 목표로 수렴
+    if(starShakeE>=STAR_SHAKE_NEED){ starConverged=true; starDots.forEach(d=>{ d.x=d.tx; d.y=d.ty; }); haptic([0,60,30,60]); }
+    else haptic(6);
+    if($("starGauge")) $("starGauge").textContent = starConverged ? (CUR.starReady||"") : (CUR.starPrefix+Math.round(t*100)+"%");
+    starRender();
+  }
+  function stardustReset(){
+    starStroke=[]; starDrawing=false; starDone=false; starConverged=false; starShakeE=0; starGotMotion=false; starLastMag=0;
+    starDots=STAR_TARGET.map(p=>{
+      const ox=(Math.random()-0.5)*STAR_SCATTER, oy=(Math.random()-0.5)*STAR_SCATTER;
+      const x0=Math.max(0.06,Math.min(0.94,p.x+ox)), y0=Math.max(0.10,Math.min(0.90,p.y+oy));
+      return { tx:p.x, ty:p.y, x0, y0, x:x0, y:y0, hit:false };
+    });
+    const rv=$("star-reveal"); if(rv) rv.classList.remove("show");
+    const b=$("starShakeBtn"); if(b) b.style.display="";
+    const fb=$("starShakeFb"); if(fb) fb.style.display="none";
+    const g=$("starGauge"); if(g){ g.classList.remove("done"); g.textContent=CUR.starPrefix+"0%"; }
+    starRender();
+  }
+  function stardustCleanup(){
+    window.removeEventListener("devicemotion",stardustOnMotion);
+    if(starMotionTimer){ clearTimeout(starMotionTimer); starMotionTimer=null; }
+    starListeners.forEach(([el,t,fn,opt])=>el.removeEventListener(t,fn,opt));
+    starListeners=[]; starBound=false; starDrawing=false;
+  }
+  function starSize(){ if(!starCanvas) return; starCanvas.width=starCanvas.clientWidth||320; starCanvas.height=210; }
+  function starAdd(e){
+    if(!starConverged||starDone||!starCanvas) return;
+    const r=starCanvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top;
+    starStroke.push({x,y});
+    starDots.forEach(s=>{ const sx=s.x*starCanvas.width, sy=s.y*starCanvas.height; if(!s.hit && Math.hypot(x-sx,y-sy)<STAR_HIT_R) s.hit=true; });
+    starRender();
+    if(starDots.length && starDots.every(s=>s.hit)) stardustComplete();
+  }
+  function stardustComplete(){
+    if(starDone) return; starDone=true; haptic([0,80,40,120]);
+    const rv=$("star-reveal"); if(rv) rv.classList.add("show");
+    const g=$("starGauge"); if(g){ g.textContent=CUR.ropeSet||""; g.classList.add("done"); }
+    starRender(); revealAdvance();
+  }
+  function starRender(){
+    if(!starCtx||!starCanvas) return;
+    const w=starCanvas.width, h=starCanvas.height;
+    starCtx.clearRect(0,0,w,h);
+    if(starStroke.length>1){
+      starCtx.strokeStyle="rgba(227,165,66,.55)"; starCtx.lineWidth=3; starCtx.lineCap="round"; starCtx.lineJoin="round";
+      starCtx.beginPath(); starStroke.forEach((p,i)=> i?starCtx.lineTo(p.x,p.y):starCtx.moveTo(p.x,p.y)); starCtx.stroke();
+    }
+    starDots.forEach(s=>{
+      const sx=s.x*w, sy=s.y*h;
+      if(s.hit){ starCtx.beginPath(); starCtx.arc(sx,sy,11,0,7); starCtx.strokeStyle="rgba(227,165,66,.4)"; starCtx.lineWidth=2; starCtx.stroke(); }
+      starCtx.beginPath(); starCtx.arc(sx,sy, s.hit?6:(starConverged?5:3), 0, 7);
+      starCtx.fillStyle = s.hit ? "#e3a542" : (starConverged ? "#f0c56b" : "#3a4663"); starCtx.fill();
+    });
   }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
