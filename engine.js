@@ -382,6 +382,7 @@ const $ = id => document.getElementById(id);
   let tightropeLevel=null, ropeCanvas=null, ropeCtx=null, ropeGauge=null, ropeFill=null, ropeFallback=null;
   let ropeStars=[], ropeStroke=[], ropeDrawing=false, ropeDone=false, ropeCompleteDone=false, ropeRaf=null, ropeBound=false, ropeListeners=[];
   let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeCenterMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1;
+  const ROPE_PTS = [ {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62} ];  // A6 — tightropeReset가 init때 읽으므로 resetLevels보다 먼저 선언(TDZ 방지)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -789,9 +790,7 @@ const $ = id => document.getElementById(id);
   const ROPE_LIMIT = 0.20;
   const ROPE_FALL_MS = 650;
   const ROPE_CENTER_MS = 1200;
-  const ROPE_PTS = [
-    {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62}
-  ];
+  // ROPE_PTS는 위(resetLevels보다 먼저)로 이동함 — TDZ 방지
   function tightropeInit(){
     ropeCanvas=$("ropeCanvas"); ropeGauge=$("ropeGauge"); ropeFill=$("ropeBalanceFill"); ropeFallback=$("ropeFallback");
     if(!ropeCanvas) return;
