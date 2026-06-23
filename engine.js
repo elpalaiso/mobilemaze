@@ -283,7 +283,12 @@ const $ = id => document.getElementById(id);
     const total=sc?sc.levels.length:1, done=Math.min(st.step||0,total);
     return { done, total, cleared:!!st.cleared };
   }
-  function isUnlocked(scid){ const sc=SCENARIOS[scid]; return !sc || !sc.gate || !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
+  function isUnlocked(scid){ const sc=SCENARIOS[scid]; if(!sc||!sc.gate) return true;
+    const own=SAVE.scenarios[scid];
+    if(own && (own.cleared || own.step>0)) return true;   // 새 층이 앞에 끼어도 이미 진행한 층은 다시 안 잠김
+    const series=sc.series && SERIES[sc.series], ids=(series&&series.scenarios)||[], at=ids.indexOf(scid);
+    if(at>=0 && ids.slice(at+1).some(id=>{ const st=SAVE.scenarios[id]; return st && (st.cleared || st.step>0); })) return true;
+    return !!(SAVE.scenarios[sc.gate] && SAVE.scenarios[sc.gate].cleared); }
   function buildHub(){
     const list=$("hubList"); if(!list) return;
     setT("hubTitle", CUR.hubTitle);
