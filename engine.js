@@ -393,7 +393,7 @@ const $ = id => document.getElementById(id);
     const d=document.createElement("div"); d.className="series-soon"; d.textContent=CUR.dailySoon||"오늘의 별자리 — 곧 펼쳐집니다";
     list.appendChild(d);
   }
-  function goHub(){ hubPath=null; goHub(); }   // 어디서든 길목 랜딩으로
+  function goHub(){ hubPath=null; buildHub(); showView("hub"); }   // 어디서든 길목 랜딩으로
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");
     const story = bookStory || (SERIES.boatman.stories && SERIES.boatman.stories[0]);
