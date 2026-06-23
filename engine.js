@@ -783,12 +783,12 @@ const $ = id => document.getElementById(id);
   }
 
   /* ===== A6 — 외줄(Tightrope): 기울여 공을 중심에 두면서 중앙에서 별을 순서대로 탭한다 ===== */
-  const ROPE_BUTTON_PUSH = 0.030;   // 폴백 좌우 버튼 보정력
-  const ROPE_CTRL = 0.030;          // 기울임 보정 권한(정규화 기울기 기준) — 키우면 더 잘 잡힘(쉬움)
-  const ROPE_INSTAB = 0.010;        // 외줄 불안정: 중심서 멀수록 미끄러짐 — 0이면 안정(쉬움), 키우면 빡셈
-  const ROPE_FRICTION = 0.90;       // 감쇠(흔들림 억제)
-  const ROPE_LIMIT = 0.30;          // 중앙 허용 폭(관대)
-  const ROPE_FALL_MS = 900;
+  const ROPE_BUTTON_SPEED = 0.026;  // 폴백 좌우 버튼 이동 속도
+  const ROPE_TILT_SPEED = 0.028;    // 기울임 이동 속도(정규화 기울기 기준)
+  const ROPE_TILT_DEAD = 0.055;     // 손 떨림/센서 잡음 무시 구간
+  const ROPE_TAP_NUDGE = 0.34;      // 별을 찍을 때마다 다음 균형을 요구하는 밀림
+  const ROPE_LIMIT = 0.26;          // 중앙 허용 폭
+  const ROPE_FALL_MS = 1400;
   const ROPE_TAP_RADIUS = 30;       // 다음 별 탭 허용 반경(px)
   const ROPE_FLASH_MS = 240;        // 무효/성공 탭 피드백
   // ROPE_PTS는 위(resetLevels보다 먼저)로 이동함 — TDZ 방지
@@ -881,6 +881,7 @@ const $ = id => document.getElementById(id);
       if(ok){
         next.hit=true; ropeNext++; haptic(8);
         if(ropeNext>=ropeStars.length){ ropeRender(); tightropeComplete(); return; }
+        ropeX = Math.max(-0.6, Math.min(0.6, ropeX + (ropeNext%2 ? ROPE_TAP_NUDGE : -ROPE_TAP_NUDGE)));
       } else haptic(4);
     }
     ropeTapFlash={x,y,ok,ts:performance.now()};
@@ -891,11 +892,10 @@ const $ = id => document.getElementById(id);
     const dt=Math.min(34, ropeLastTs ? ts-ropeLastTs : 16);
     ropeLastTs=ts;
     const dtf = dt/16;
-    const tiltN = Math.max(-1, Math.min(1, ropeTilt/22));        // 정규화 기울기(±22°=최대 보정)
-    const ctrl = ropeFallbackDir ? ropeFallbackDir*ROPE_BUTTON_PUSH : tiltN*ROPE_CTRL;
-    ropeV += (ctrl + ropeX*ROPE_INSTAB)*dtf;                     // 능동 보정 + 외줄 불안정(중심서 멀수록 미끄러짐)
-    ropeV *= ROPE_FRICTION;
-    ropeX += ropeV*dtf;
+    const rawTilt = Math.max(-1, Math.min(1, ropeTilt/18));      // 정규화 기울기(±18°=최대 이동)
+    const tiltN = Math.abs(rawTilt)<ROPE_TILT_DEAD ? 0 : rawTilt;
+    const ctrl = ropeFallbackDir ? ropeFallbackDir*ROPE_BUTTON_SPEED : tiltN*ROPE_TILT_SPEED;
+    ropeX += ctrl*dtf;                                           // 속도 누적/양의 피드백 없이 직접 이동
     ropeX = Math.max(-0.6, Math.min(0.6, ropeX));
     const centered = Math.abs(ropeX) <= ROPE_LIMIT;
     if(centered) ropeFallMs=Math.max(0,ropeFallMs-dt*1.8);
