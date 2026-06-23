@@ -421,7 +421,7 @@ const $ = id => document.getElementById(id);
 
   /* ===== 데일리 별자리 — 12궁 그리드 + '별 잇기'로 점등되는 오늘의 운세 ===== */
   let dailySel=null;                                  // 선택된 별자리 key(null=그리드)
-  let dCanvas=null, dCtx=null, dStars=[], dStroke=[], dDrawing=false, dLit=false;
+  let dCanvas=null, dCtx=null, dStars=[], dPaths=null, dStroke=[], dDrawing=false, dLit=false;
   function dailyLang(){ return (SAVE.lang==="en") ? "en" : "ko"; }
   function getDaily(){ return (typeof DAILY_SEED!=="undefined") ? DAILY_SEED : { date:"", readings:{} }; }   // Phase2: fetch JSON으로 대체
   function zodiacList(){ return (typeof ZODIAC!=="undefined") ? ZODIAC : []; }
@@ -459,23 +459,40 @@ const $ = id => document.getElementById(id);
     const head=document.createElement("div"); head.className="sign-head"; head.innerHTML=(meta.name||key)+' <span class="z-dates">'+(meta.dates||"")+'</span>'; card.appendChild(head);
     const dateEl=document.createElement("div"); dateEl.className="daily-date"; dateEl.textContent=d.date||""; card.appendChild(dateEl);
     dCanvas=document.createElement("canvas"); dCanvas.className="sign-canvas deco"; card.appendChild(dCanvas);
-    dStars=z.stars.map(p=>({x:p.x,y:p.y})); dailyDrawConstellation();
+    dStars=z.stars.map(p=>({x:p.x,y:p.y})); dPaths=z.paths||null; dailyDrawConstellation();
     if(r.teaser){ const t=document.createElement("div"); t.className="sign-teaser"; t.textContent=r.teaser; card.appendChild(t); }
     const bodyWrap=document.createElement("div"); bodyWrap.className="sign-body"; card.appendChild(bodyWrap);
     const lines=Array.isArray(r.body)?r.body:(r.body?[r.body]:[]);   // 본문 array(권장) 또는 string 허용
     lines.forEach((ln,i)=>{ const p=document.createElement("p"); p.className="sign-line"; p.textContent=ln; p.style.animationDelay=(0.15+i*0.16)+"s"; bodyWrap.appendChild(p); });
-    const share=document.createElement("button"); share.className="hubcard sign-share"; share.id="signShare"; share.textContent=CUR.dailyShare||"공유";
-    share.addEventListener("click",()=>dailyShare(z, meta, r)); card.appendChild(share);
+    const en=(SAVE.lang==="en");
+    const row=document.createElement("div"); row.className="sign-share-row"; card.appendChild(row);
+    const bA=document.createElement("button"); bA.className="hubcard sign-share"; bA.textContent="✦ "+(en?"Card image":"카드 이미지");
+    bA.addEventListener("click",()=>dailyShareImage(z, meta, r, false, bA)); row.appendChild(bA);
+    const bB=document.createElement("button"); bB.className="hubcard sign-share"; bB.textContent="✦ "+(en?"Full image":"전체 이미지");
+    bB.addEventListener("click",()=>dailyShareImage(z, meta, r, true, bB)); row.appendChild(bB);
+    const bT=document.createElement("button"); bT.className="hubcard sign-share ghost"; bT.id="signShare"; bT.textContent=(en?"Copy text":"텍스트 복사");
+    bT.addEventListener("click",()=>dailyShare(z, meta, r)); row.appendChild(bT);
+  }
+  /* 별자리 그리기(공유 헬퍼) — 정규화 좌표를 (rx,ry,rw,rh) 영역에 그림. paths 있으면 선 그림대로, 없으면 순차 연결. */
+  function drawConstel(ctx, stars, paths, rx, ry, rw, rh, o){
+    o=o||{}; const px=s=>rx+s.x*rw, py=s=>ry+s.y*rh;
+    ctx.strokeStyle=o.line||"rgba(240,197,107,.55)"; ctx.lineWidth=o.lw||1.5; ctx.lineCap="round"; ctx.lineJoin="round";
+    if(paths&&paths.length){
+      paths.forEach(p=>{ ctx.beginPath(); p.forEach((idx,i)=>{ const s=stars[idx]; if(!s)return; const X=px(s),Y=py(s); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }); ctx.stroke(); });
+    } else if(stars.length>1){
+      ctx.beginPath(); stars.forEach((s,i)=>{ const X=px(s),Y=py(s); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }); ctx.stroke();
+    }
+    const halo=o.halo||9, dot=o.dot||3.5;
+    stars.forEach(s=>{ const X=px(s),Y=py(s);
+      ctx.beginPath(); ctx.arc(X,Y,halo,0,7); ctx.strokeStyle=o.haloC||"rgba(240,197,107,.22)"; ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(X,Y,dot,0,7); ctx.fillStyle=o.dotC||"#f0c56b"; ctx.fill(); });
   }
   function dailyDrawConstellation(){   // 장식용 별자리(자동 점등, 상호작용 없음)
     if(!dCanvas) return; dCtx=dCanvas.getContext("2d");
     dCanvas.width=dCanvas.clientWidth||320; dCanvas.height=150;
     const w=dCanvas.width, h=dCanvas.height; dCtx.clearRect(0,0,w,h);
-    if(dStars.length>1){ dCtx.strokeStyle="rgba(240,197,107,.5)"; dCtx.lineWidth=1.5; dCtx.lineCap="round"; dCtx.lineJoin="round";
-      dCtx.beginPath(); dStars.forEach((s,i)=>{ const x=s.x*w, y=s.y*h; i?dCtx.lineTo(x,y):dCtx.moveTo(x,y); }); dCtx.stroke(); }
-    dStars.forEach(s=>{ const x=s.x*w, y=s.y*h;
-      dCtx.beginPath(); dCtx.arc(x,y,9,0,7); dCtx.strokeStyle="rgba(240,197,107,.22)"; dCtx.lineWidth=2; dCtx.stroke();
-      dCtx.beginPath(); dCtx.arc(x,y,3.5,0,7); dCtx.fillStyle="#f0c56b"; dCtx.fill(); });
+    // 정규화 좌표(0..1)를 약간 안쪽 패딩 영역에 매핑 → 가장자리 별이 잘리지 않게
+    drawConstel(dCtx, dStars, dPaths, w*0.08, h*0.10, w*0.84, h*0.80);
   }
   function dailyStop(){ dDrawing=false; }
   function dailyShare(z, meta, r){
@@ -487,6 +504,81 @@ const $ = id => document.getElementById(id);
       try{ if(navigator.share){ await navigator.share({ text, url }); return; } }catch(e){ return; }
       try{ await navigator.clipboard.writeText(text+" "+url); const sb=$("signShare"); if(sb){ const o=sb.textContent; sb.textContent="🔗"; setTimeout(()=>{ sb.textContent=o; },1500); } }catch(e){}
     })();
+  }
+  /* ===== 별자리 카드 → 이미지 공유 (A 키비주얼 / B 전체) ===== */
+  function rrect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function wrapLines(ctx, text, maxW){
+    const words=String(text).split(" "); const out=[]; let line="";
+    for(const w of words){
+      const test=line?line+" "+w:w;
+      if(ctx.measureText(test).width<=maxW){ line=test; continue; }
+      if(line){ out.push(line); line=""; }
+      if(ctx.measureText(w).width<=maxW){ line=w; }
+      else { let cur=""; for(const ch of w){ if(cur && ctx.measureText(cur+ch).width>maxW){ out.push(cur); cur=ch; } else cur+=ch; } line=cur; }
+    }
+    if(line) out.push(line);
+    return out.length?out:[""];
+  }
+  function makeSignCanvas(z, meta, r, full){
+    const W=1080, pad=90, innerW=W-2*pad, cx=W/2;
+    const FAM="'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
+    const fGlyph="140px "+FAM, fName="600 60px "+FAM, fSub="30px "+FAM,
+          fTease="italic 40px "+FAM, fBody="38px "+FAM, fFoot="600 30px "+FAM;
+    const accent="#f0c56b", ink="#d3dbea", muted="#7f8aa0";
+    const d=getDaily();
+    const mc=document.createElement("canvas").getContext("2d");
+    mc.font=fTease; const teaseLines=r.teaser?wrapLines(mc,r.teaser,innerW*0.92):[];
+    let bodyBlocks=[];
+    if(full){ mc.font=fBody; const sents=Array.isArray(r.body)?r.body:(r.body?[r.body]:[]); bodyBlocks=sents.map(s=>wrapLines(mc,s,innerW)); }
+    const top=92, glyphH=148, nameH=80, subH=58, constTop=22, constH=356, constBot=30;
+    const teaseLH=56, bodyLH=62, sentGap=16, footTop=42, footH=46, bottom=74;
+    let h=top+glyphH+nameH+subH+constTop+constH+constBot;
+    const teaseBlockH = teaseLines.length ? (16+teaseLines.length*teaseLH+(full?20:26)) : (full?10:18);
+    h+=teaseBlockH;
+    let dividerH=0, bodyH=0;
+    if(full){ dividerH=45; bodyH=24; bodyBlocks.forEach((b,i)=>{ bodyH+=b.length*bodyLH; if(i<bodyBlocks.length-1) bodyH+=sentGap; }); h+=dividerH+bodyH; }
+    h+=footTop+footH+bottom;
+    const H=Math.round(h);
+    const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,"#0a0e18"); g.addColorStop(1,"#0d1120"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="rgba(255,255,255,.05)"; for(let i=0;i<70;i++){ const rx=(i*131)%W, ry=(i*197)%H; ctx.beginPath(); ctx.arc(rx,ry,(i%3)?0.8:1.6,0,7); ctx.fill(); }
+    ctx.strokeStyle="rgba(240,197,107,.22)"; ctx.lineWidth=2; rrect(ctx,30,30,W-60,H-60,22); ctx.stroke();
+    ctx.textAlign="center"; ctx.textBaseline="alphabetic";
+    let y=top;
+    ctx.font=fGlyph; ctx.fillStyle=accent; ctx.fillText(z.glyph, cx, y+glyphH*0.78); y+=glyphH;
+    ctx.font=fName; ctx.fillStyle=ink; ctx.fillText(meta.name||z.key, cx, y+58); y+=nameH;
+    ctx.font=fSub; ctx.fillStyle=muted; ctx.fillText((meta.dates||"")+"   ·   "+(d.date||""), cx, y+34); y+=subH;
+    y+=constTop; drawConstel(ctx, z.stars, z.paths||null, cx-(innerW*0.86)/2, y, innerW*0.86, constH, {lw:2.5, halo:15, dot:6, line:"rgba(240,197,107,.6)", haloC:"rgba(240,197,107,.18)", dotC:"#f3cd78"}); y+=constH+constBot;
+    if(teaseLines.length){ y+=16; ctx.font=fTease; ctx.fillStyle=accent; teaseLines.forEach(ln=>{ ctx.fillText(ln, cx, y+40); y+=teaseLH; }); y+=(full?20:26); }
+    else y+=(full?10:18);
+    if(full){ ctx.strokeStyle="rgba(240,197,107,.25)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx-60,y+12); ctx.lineTo(cx+60,y+12); ctx.stroke(); y+=45;
+      y+=24; ctx.font=fBody; ctx.fillStyle=ink;
+      bodyBlocks.forEach((b,i)=>{ b.forEach(ln=>{ ctx.fillText(ln, cx, y+44); y+=bodyLH; }); if(i<bodyBlocks.length-1) y+=sentGap; });
+    }
+    y+=footTop; ctx.strokeStyle="rgba(240,197,107,.2)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+    ctx.font=fFoot; ctx.fillStyle=muted; ctx.fillText("건너편 · Yonderkeep", cx, y+38);
+    return cv;
+  }
+  function shareSignCanvas(cv, fname, text, btn){
+    const en=(SAVE.lang==="en");
+    const flash=(msg)=>{ if(btn){ const o=btn.textContent; btn.textContent=msg; setTimeout(()=>{ btn.textContent=o; },1600); } };
+    const dl=(blob)=>{ try{ const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); flash("⬇"); }catch(e){ flash(en?"✗":"✗ 실패"); } };
+    if(!cv || !cv.toBlob){ try{ const u=cv.toDataURL("image/png"); const a=document.createElement("a"); a.href=u; a.download=fname; a.click(); flash("⬇"); }catch(e){ flash(en?"✗":"✗ 실패"); } return; }
+    cv.toBlob(async(blob)=>{
+      if(!blob){ flash(en?"✗":"✗ 실패"); return; }
+      const file=new File([blob], fname, {type:"image/png"});
+      try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({ files:[file], text }); flash("✓"); return; } }
+      catch(e){ if(e && e.name==="AbortError") return; }
+      dl(blob);
+    }, "image/png");
+  }
+  function dailyShareImage(z, meta, r, full, btn){
+    try{
+      const cv=makeSignCanvas(z, meta, r, full);
+      const d=getDaily();
+      const text=(meta.name||z.key)+" · "+(d.date||"")+(r.teaser?"\n"+r.teaser:"")+"\n— "+(CUR.title||"Yonderkeep")+" "+location.href.split("#")[0];
+      shareSignCanvas(cv, (z.key||"sign")+(full?"-full":"-card")+".png", text, btn);
+    }catch(e){ if(btn){ const o=btn.textContent; btn.textContent=(SAVE.lang==="en"?"✗":"✗ 실패"); setTimeout(()=>{ btn.textContent=o; },1600); } }
   }
   function renderBook(cascade){      // cascade=true 펼치는 연출 / false 즉시(언어 토글·복귀 재렌더)
     const page=$("bookPage");

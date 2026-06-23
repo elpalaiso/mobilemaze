@@ -272,7 +272,10 @@
   .sign-body{ color:var(--ink); line-height:1.85; font-size:15px; margin:6px 4px 16px; text-align:center; }
   .sign-line{ margin:0 0 10px; opacity:0; animation:sign-fade .9s ease forwards; }
   @keyframes sign-fade{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+  .sign-share-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .sign-share-row .sign-share{ flex:1 1 0; min-width:120px; width:auto; margin-top:0; }
   .sign-share{ width:100%; text-align:center; margin-top:4px; }
+  .sign-share.ghost{ background:transparent; border-color:var(--dim); color:var(--dim); flex-basis:100%; }
   .hintbox{ margin-top:16px; animation:hintIn .28s ease-out both; }
   .hint-reveal{ background:#1c1710; border:1px solid var(--accent); color:var(--accent);
     border-radius:10px; padding:9px 12px; font-size:13px; font-family:inherit; }
