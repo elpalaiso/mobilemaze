@@ -783,13 +783,13 @@ const $ = id => document.getElementById(id);
   }
 
   /* ===== A6 — 외줄(Tightrope): 기울여 공을 중심에 두면서 동시에 별길을 긋는다 ===== */
-  const ROPE_TILT_GAIN = 0.00034;
-  const ROPE_BUTTON_PUSH = 0.020;
-  const ROPE_DRIFT = 0.010;
-  const ROPE_FRICTION = 0.90;
-  const ROPE_LIMIT = 0.20;
-  const ROPE_FALL_MS = 650;
-  const ROPE_CENTER_MS = 1200;
+  const ROPE_BUTTON_PUSH = 0.030;   // 폴백 좌우 버튼 보정력
+  const ROPE_CTRL = 0.030;          // 기울임 보정 권한(정규화 기울기 기준) — 키우면 더 잘 잡힘(쉬움)
+  const ROPE_INSTAB = 0.010;        // 외줄 불안정: 중심서 멀수록 미끄러짐 — 0이면 안정(쉬움), 키우면 빡셈
+  const ROPE_FRICTION = 0.90;       // 감쇠(흔들림 억제)
+  const ROPE_LIMIT = 0.30;          // 중앙 허용 폭(관대)
+  const ROPE_FALL_MS = 900;
+  const ROPE_CENTER_MS = 900;       // 중앙 유지 요구 시간
   // ROPE_PTS는 위(resetLevels보다 먼저)로 이동함 — TDZ 방지
   function tightropeInit(){
     ropeCanvas=$("ropeCanvas"); ropeGauge=$("ropeGauge"); ropeFill=$("ropeBalanceFill"); ropeFallback=$("ropeFallback");
@@ -887,11 +887,13 @@ const $ = id => document.getElementById(id);
     if(!ropeCanvas || ropeCompleteDone) return;
     const dt=Math.min(34, ropeLastTs ? ts-ropeLastTs : 16);
     ropeLastTs=ts;
-    const input = ropeFallbackDir ? ropeFallbackDir*ROPE_BUTTON_PUSH : ropeTilt*ROPE_TILT_GAIN*dt;
-    ropeV += input;
+    const dtf = dt/16;
+    const tiltN = Math.max(-1, Math.min(1, ropeTilt/22));        // 정규화 기울기(±22°=최대 보정)
+    const ctrl = ropeFallbackDir ? ropeFallbackDir*ROPE_BUTTON_PUSH : tiltN*ROPE_CTRL;
+    ropeV += (ctrl + ropeX*ROPE_INSTAB)*dtf;                     // 능동 보정 + 외줄 불안정(중심서 멀수록 미끄러짐)
     ropeV *= ROPE_FRICTION;
-    ropeX += ropeV*(dt/16);
-    ropeX = Math.max(-0.56, Math.min(0.56, ropeX));
+    ropeX += ropeV*dtf;
+    ropeX = Math.max(-0.6, Math.min(0.6, ropeX));
     const centered = Math.abs(ropeX) <= ROPE_LIMIT;
     if(centered){ ropeCenterMs += dt; ropeFallMs=Math.max(0,ropeFallMs-dt*1.8); }
     else { ropeCenterMs=0; ropeFallMs += dt; }
