@@ -325,7 +325,10 @@ const $ = id => document.getElementById(id);
     list.innerHTML="";
     if(hubDetail){ renderDetail(list); return; }   // 카테고리 상세 페이지(다음 페이지)
     setT("hubTitle", CUR.hubTitle);
-    if(!hubOpen) hubOpen={ stories:false, tower:!!towerResume(), daily:false };   // 초기: 진행 중 타워만 자동 펼침(옵션 B)
+    if(!hubOpen) hubOpen={ stories:true, tower:true, daily:true };   // 초기: 모두 펼침(컨텐츠 적을 땐 열린 편이 나음)
+    { const h=document.createElement("button"); h.className="hubcard pathcard daily-path";   // 별자리 = 자체 화면(12궁) 진입 — 길목 최상단
+      h.innerHTML='✨ '+(CUR.pathDaily||"별자리")+' <span class="hubcount">'+zodiacList().length+'</span>';
+      h.addEventListener("click",()=>{ openDaily(); }); list.appendChild(h); }
     const r=towerResume();   // 히어로 — 이어하기(타워 진행 중일 때만)
     if(r){
       const rc=document.createElement("button"); rc.className="hubcard hero-resume";
@@ -336,9 +339,6 @@ const $ = id => document.getElementById(id);
     accordion(list,"stories","📖",CUR.pathStories||"이야기", storyCount()+" "+(CUR.storyUnit||"편"), renderStoriesCats);
     const tc=towerCleared();
     accordion(list,"tower","🗼",CUR.pathTower||"퀴즈 타워", tc.total+" "+(CUR.floorUnit||"층"), renderTowerCats);
-    { const h=document.createElement("button"); h.className="hubcard pathcard";   // 별자리 = 자체 화면(12궁) 진입
-      h.innerHTML='✦ '+(CUR.pathDaily||"별자리")+' <span class="hubcount">'+zodiacList().length+'</span> <span class="cat-arrow">›</span>';
-      h.addEventListener("click",()=>{ openDaily(); }); list.appendChild(h); }
   }
   function accordion(list, key, icon, title, sub, renderFn){   // 갈래 헤더(접기/펼치기) + 펼치면 본문 인라인
     const open=!!hubOpen[key];
