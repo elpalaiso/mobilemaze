@@ -53,7 +53,7 @@ const $ = id => document.getElementById(id);
     document.querySelectorAll(".langbar button").forEach(b=>
       b.classList.toggle("on", b.dataset.lang===lang));
     // 현재 활성 레벨 콘텐츠 재바인딩(언어 토글 반영)
-    const _l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
+    const _l=currentLevel();
     if(_l && TRICKS[_l.trick] && TRICKS[_l.trick].bind) TRICKS[_l.trick].bind(_l);
     const _hub=$("hub"); if(_hub && _hub.style.display!=="none") buildHub();   // 허브 열려있으면 카드도 새 언어로
     const _bk=$("book"); if(_bk && _bk.style.display!=="none") renderBook(false);   // 책 열려있으면 내용·버튼도 새 언어로
@@ -80,7 +80,7 @@ const $ = id => document.getElementById(id);
     requestAnimationFrame(()=>{ g.style.transition="opacity "+(big?720:400)+"ms ease-out"; g.style.opacity="0"; });
   }
   function check(inId, msgId){
-    const lvl = RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]);
+    const lvl = currentLevel();
     const v = norm($(inId).value);
     const m = $(msgId);
     const lang = document.documentElement.lang || "ko";
@@ -114,6 +114,10 @@ const $ = id => document.getElementById(id);
       setT("l4-tag",CUR[t.tag]); setT("l4-riddle",CUR[t.riddle]); setT("l4-hint",CUR[t.hint]); } },
     route:    { init:routeInit, reset:routeReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l5-tag",CUR[t.tag]); setT("l5-riddle",CUR[t.riddle]); setT("l5-hint",CUR[t.hint]); setT("l5-reveal",CUR[t.reveal]); } },
+    holdfast: { init:holdfastInit, cleanup:holdfastCleanup, reset:holdfastReset, bind:(lv)=>{ const t=lv.text||{};
+      holdfastLevel=lv; holdfastReset(); setT("hold-tag",CUR[t.tag]); setT("hold-riddle",CUR[t.riddle]); setT("hold-hint",CUR[t.hint]);
+      setT("holdPadLabel",CUR.holdPadLabel); setT("holdLockLabel",CUR.holdLockLabel); setT("holdGauge",CUR.holdPrefix+"0%");
+      setT("hold-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -135,6 +139,7 @@ const $ = id => document.getElementById(id);
   };
   function trickOf(sec){ const l=RUN.scenario.levels.find(x=>x.sec===sec); return l ? TRICKS[l.trick] : null; }
   let curIdx = 0;
+  function currentLevel(){ return RUN.scenario.levels[curIdx] || null; }
   function show(idx){
     idx=Math.max(0,Math.min(idx,ORDER.length-1));
     const pt=trickOf(ORDER[curIdx]); if(pt && pt.cleanup) pt.cleanup();   // 떠나는 트릭 정리(registry)
@@ -144,7 +149,7 @@ const $ = id => document.getElementById(id);
     _lv.style.opacity="0"; requestAnimationFrame(()=>{ _lv.style.transition="opacity .35s ease"; _lv.style.opacity="1"; });
     document.querySelectorAll("#dots i").forEach((d,k)=>d.classList.toggle("on", k<idx));
     window.scrollTo(0,0);
-    const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[idx]);            // 콘텐츠 바인딩 + 트릭 준비(registry)
+    const lvl=RUN.scenario.levels[idx] || null;            // 콘텐츠 바인딩 + 트릭 준비(registry)
     const nt=lvl ? TRICKS[lvl.trick] : null;
     if(nt && nt.reset) nt.reset();
     if(nt){ if(nt.bind) nt.bind(lvl); if(nt.init) nt.init(); }
@@ -163,7 +168,7 @@ const $ = id => document.getElementById(id);
   let seqLines=null, seqIdx=0, seqTimer=null, seqFinished=false, seqTapBound=false;   // 긴 엔딩 시퀀스
   function endK(name, fb){ const e=RUN.scenario && RUN.scenario.ending; return (e && e[name]) ? CUR[e[name]] : CUR[fb]; }
   /* 현재 레벨의 매니페스트 text 오버라이드(없으면 글로벌 폴백) — 트릭 메시지 시나리오별화 */
-  function curLevelText(name, fb){ const lvl=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
+  function curLevelText(name, fb){ const lvl=currentLevel(); const t=lvl&&lvl.text; return (t && t[name]) ? CUR[t[name]] : CUR[fb]; }
   function setCoda(){ const cd=$("end-coda"); if(!cd) return; const e=RUN.scenario && RUN.scenario.ending; cd.textContent = (e && e.coda) ? CUR[e.coda] : ""; }
   /* 엔딩 카드 하단: 시리즈별 오버라이드. 측량가=공유 버튼 숨김 + 측량가 카피 + "이야기로 돌아가기". */
   function endCardChrome(){
@@ -239,7 +244,7 @@ const $ = id => document.getElementById(id);
   }
   function startScenario(id, fresh){
     fromStory=false;          // 기본은 허브 경유 — openKnot가 호출 후 true로 덮음
-    stopMic(); flameStop(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
+    stopMic(); flameStop(); holdfastCleanup(); warmStop(); fwStopLoop(); emberStop();    // 이전 시나리오 루프 정리(방어)
     RUN.scenario = SCENARIOS[id] || SCENARIOS.tutorial;
     ORDER = RUN.scenario.levels.map(l=>l.sec).concat("done");
     buildDots();
@@ -368,6 +373,8 @@ const $ = id => document.getElementById(id);
   /* ===== L4/L5 상태 — show()/resetLevels보다 먼저 선언(TDZ 방지) ===== */
   let audioCtx=null, micStream=null, micRaf=null, sailDone=false, oarFill=0;
   let routeCanvas=null, routeCtx=null, routeStars=[], routeStroke=[], routeDrawing=false, routeDone=false;
+  let holdfastLevel=null, holdCanvas=null, holdCtx=null, holdPad=null, holdLockBtn=null, holdGauge=null, holdStars=[], holdStroke=[], holdDone=false;
+  let holdActive=false, holdLocked=false, holdId=null, holdDrawId=null, holdRaf=null, holdBound=false, holdListeners=[];
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
@@ -392,6 +399,7 @@ const $ = id => document.getElementById(id);
     sailDone=false; oarFill=0; setSail(0,0);          // L4
     $("windBtn").style.display=""; $("oarBtn").style.display="none";
     routeReset();                                     // L5
+    holdfastReset();                                  // A4
     flameReset();                                     // L6
     rowReset();                                       // L7
     rpReset();                                        // 나란히 젓기(새벽 강)
@@ -405,7 +413,7 @@ const $ = id => document.getElementById(id);
     ["msg1","msg2","msg3","msg5"].forEach(id=>{ const e=$(id); if(e){ e.textContent=""; e.className="msg"; } });
   }
 
-  function levelOpt(name, fb){ const l=RUN.scenario.levels.find(x=>x.sec===ORDER[curIdx]); return (l && l[name]) || fb; }
+  function levelOpt(name, fb){ const l=currentLevel(); return (l && l[name]) || fb; }
   function pressReset(){ pressNeed=levelOpt("pressMs",600); const b=$("pressBox"); if(b) b.classList.remove("lit"); revealCancel(); }
   function pinchReset(){ const e=$("in2"), m=$("msg2"); if(e) e.value=""; if(m){ m.textContent=""; m.className="msg"; } }
   function tiltReset(){ const b=$("tiltBox"); if(b) b.classList.remove("show"); const g=$("gauge"); if(g) g.textContent=CUR.gaugeInit; revealCancel(); }
@@ -637,6 +645,132 @@ const $ = id => document.getElementById(id);
       routeCtx.beginPath(); routeCtx.arc(sx,sy, s.hit?6:4, 0, 7);
       routeCtx.fillStyle = s.hit ? "#e3a542" : "#3a4663"; routeCtx.fill();
     });
+  }
+
+  /* ===== A4 — 버팀(Holdfast): 닻을 유지하는 동안만 별길이 머문다 ===== */
+  const HOLD_DECAY = 1.35;
+  const HOLD_MIN_STROKE = 2;
+  function holdfastInit(){
+    holdCanvas=$("holdCanvas"); holdPad=$("holdPad"); holdLockBtn=$("holdLockBtn"); holdGauge=$("holdGauge");
+    if(!holdCanvas || !holdPad || !holdLockBtn) return;
+    holdCtx=holdCanvas.getContext("2d");
+    if(!holdBound){
+      const on=(el,type,fn,opt)=>{ el.addEventListener(type,fn,opt); holdListeners.push([el,type,fn,opt]); };
+      const padDown=e=>{
+        e.preventDefault();
+        if(holdId===null){ holdId=e.pointerId; holdActive=true; try{ holdPad.setPointerCapture(e.pointerId); }catch(_){} holdRender(); }
+      };
+      const padEnd=e=>{
+        if(e.pointerId===holdId){ holdId=null; holdActive=false; try{ holdPad.releasePointerCapture(e.pointerId); }catch(_){} holdRender(); }
+      };
+      const canvasDown=e=>{
+        if(holdDone || holdDrawId!==null) return;
+        e.preventDefault(); holdDrawId=e.pointerId; try{ holdCanvas.setPointerCapture(e.pointerId); }catch(_){}
+        holdAdd(e);
+      };
+      const canvasMove=e=>{ if(e.pointerId===holdDrawId){ e.preventDefault(); holdAdd(e); } };
+      const canvasEnd=e=>{
+        if(e.pointerId===holdDrawId){ holdDrawId=null; try{ holdCanvas.releasePointerCapture(e.pointerId); }catch(_){} }
+      };
+      const lock=e=>{ e.preventDefault(); holdLocked=!holdLocked; holdRender(); };
+      on(holdPad,"pointerdown",padDown);
+      on(holdPad,"pointerup",padEnd); on(holdPad,"pointercancel",padEnd); on(holdPad,"lostpointercapture",padEnd);
+      on(holdCanvas,"pointerdown",canvasDown);
+      on(holdCanvas,"pointermove",canvasMove);
+      on(holdCanvas,"pointerup",canvasEnd); on(holdCanvas,"pointercancel",canvasEnd); on(holdCanvas,"lostpointercapture",canvasEnd);
+      on(holdLockBtn,"click",lock);
+      holdBound=true;
+    }
+    holdSize(); holdRender(); holdfastStop(); holdRaf=requestAnimationFrame(holdLoop);
+  }
+  function holdfastStop(){ if(holdRaf){ cancelAnimationFrame(holdRaf); holdRaf=null; } }
+  function holdfastCleanup(){
+    holdfastStop();
+    holdListeners.forEach(([el,type,fn,opt])=>el.removeEventListener(type,fn,opt));
+    holdListeners=[]; holdBound=false; holdId=null; holdDrawId=null; holdActive=false;
+  }
+  function holdSize(){
+    if(!holdCanvas) return;
+    holdCanvas.width = holdCanvas.clientWidth || 320;
+    holdCanvas.height = 220;
+  }
+  function holdResetStars(){
+    const src=(holdfastLevel && holdfastLevel.stars) || [
+      {x:0.15,y:0.72},{x:0.32,y:0.32},{x:0.50,y:0.62},{x:0.70,y:0.28},{x:0.86,y:0.56}
+    ];
+    holdStars=src.map(p=>({x:p.x,y:p.y,hit:false}));
+  }
+  function holdfastReset(){
+    holdfastStop(); holdResetStars(); holdStroke=[]; holdDone=false; holdActive=false; holdLocked=false; holdId=null; holdDrawId=null;
+    const rv=$("hold-reveal"); if(rv) rv.classList.remove("show");
+    if(holdGauge){ holdGauge.classList.remove("done"); holdGauge.textContent=CUR.holdPrefix+"0%"; }
+    holdRender();
+  }
+  function holdIsKept(){ return holdActive || holdLocked; }
+  function holdAdd(e){
+    if(holdDone || !holdCanvas || !holdIsKept()) return;
+    const r=holdCanvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    holdStroke.push({x,y});
+    holdStars.forEach(s=>{
+      const sx=s.x*holdCanvas.width, sy=s.y*holdCanvas.height;
+      if(!s.hit && Math.hypot(x-sx,y-sy) < 25){ s.hit=true; haptic(8); }
+    });
+    if(holdStars.length && holdStars.every(s=>s.hit)) holdComplete();
+    else holdRender();
+  }
+  function holdLoop(){
+    if(!holdDone){
+      if(!holdIsKept() && holdStroke.length){
+        const n=Math.max(HOLD_MIN_STROKE, Math.ceil(HOLD_DECAY));
+        holdStroke.splice(Math.max(0, holdStroke.length-n), n);
+        holdRehit();
+      }
+      holdRender();
+      holdRaf=requestAnimationFrame(holdLoop);
+    }
+  }
+  function holdRehit(){
+    holdStars.forEach(s=>s.hit=false);
+    holdStroke.forEach(p=>holdStars.forEach(s=>{
+      const sx=s.x*holdCanvas.width, sy=s.y*holdCanvas.height;
+      if(Math.hypot(p.x-sx,p.y-sy) < 25) s.hit=true;
+    }));
+  }
+  function holdComplete(){
+    if(holdDone || !holdIsKept()) return;
+    holdDone=true; haptic([0,80,40,120]);
+    const rv=$("hold-reveal"); if(rv) rv.classList.add("show");
+    if(holdGauge){ holdGauge.textContent=CUR.holdSet; holdGauge.classList.add("done"); }
+    holdRender(); holdfastStop(); revealAdvance();
+  }
+  function holdRender(){
+    if(holdPad) holdPad.classList.toggle("on", !!holdActive);
+    if(holdLockBtn) holdLockBtn.classList.toggle("on", !!holdLocked);
+    if(!holdCtx || !holdCanvas) return;
+    const w=holdCanvas.width, h=holdCanvas.height;
+    holdCtx.clearRect(0,0,w,h);
+    const kept=holdIsKept();
+    if(holdStroke.length>1){
+      holdCtx.strokeStyle=kept ? "rgba(227,165,66,.68)" : "rgba(191,88,48,.35)";
+      holdCtx.lineWidth=3; holdCtx.lineCap="round"; holdCtx.lineJoin="round";
+      holdCtx.beginPath();
+      holdStroke.forEach((p,i)=> i ? holdCtx.lineTo(p.x,p.y) : holdCtx.moveTo(p.x,p.y));
+      holdCtx.stroke();
+    }
+    holdStars.forEach(s=>{
+      const sx=s.x*w, sy=s.y*h;
+      if(s.hit){
+        holdCtx.beginPath(); holdCtx.arc(sx,sy,12,0,7);
+        holdCtx.strokeStyle="rgba(227,165,66,.42)"; holdCtx.lineWidth=2; holdCtx.stroke();
+      }
+      holdCtx.beginPath(); holdCtx.arc(sx,sy, s.hit?6:4, 0, 7);
+      holdCtx.fillStyle = s.hit ? "#e3a542" : (kept ? "#4b5878" : "#2c3448"); holdCtx.fill();
+    });
+    if(holdGauge && !holdDone){
+      const pct=holdStars.length ? Math.round(holdStars.filter(s=>s.hit).length / holdStars.length * 100) : 0;
+      holdGauge.textContent=(kept ? CUR.holdPrefix : CUR.holdDecayPrefix) + pct + "%";
+    }
   }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====

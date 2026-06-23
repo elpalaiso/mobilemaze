@@ -5,7 +5,7 @@
 <!-- 핀치 줌 허용(레벨2용): user-scalable=yes -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>건너편 · Yonderkeep</title>
-<link rel="stylesheet" href="styles.css?v=06231400" />
+<link rel="stylesheet" href="styles.css?v=06231436" />
 </head>
 <body>
 <div class="wrap">
@@ -90,6 +90,22 @@
     <div id="l5-reveal"></div>
     <button class="sensorBtn" id="routeClearBtn"></button>
     <div class="hint" id="l5-hint"></div>
+  </section>
+
+  <!-- A4 : 버팀(Holdfast) — 닻을 잡은 채 별길 잇기 -->
+  <section class="level" id="lvHold">
+    <div class="tag" id="hold-tag"></div>
+    <div class="riddle" id="hold-riddle"></div>
+    <div class="holdfast">
+      <button class="hold-pad" id="holdPad"><span id="holdPadLabel"></span></button>
+      <div class="hold-route">
+        <canvas id="holdCanvas"></canvas>
+        <button class="hold-lock" id="holdLockBtn"><span id="holdLockLabel"></span></button>
+      </div>
+      <div class="gauge" id="holdGauge"></div>
+    </div>
+    <div id="hold-reveal"></div>
+    <div class="hint" id="hold-hint"></div>
   </section>
 
   <!-- LEVEL 6 : 두 손가락 감싸기(등불 보살핌) — 2막 안개 -->
@@ -248,9 +264,9 @@
 <div id="glow" style="position:fixed; inset:0; pointer-events:none; opacity:0; z-index:60; background:radial-gradient(circle at 50% 42%, rgba(227,165,66,.5), rgba(227,165,66,0) 68%);"></div>
 <div id="build"></div>
 
-<script src="levels.js?v=06231400"></script>
-<script src="scenarios.js?v=06231400"></script>
-<script src="engine.js?v=06231400"></script>
-<script src="version.js?v=06231400"></script>
+<script src="levels.js?v=06231436"></script>
+<script src="scenarios.js?v=06231436"></script>
+<script src="engine.js?v=06231436"></script>
+<script src="version.js?v=06231436"></script>
 </body>
 </html>
