@@ -80,9 +80,14 @@ const SCENARIOS = {
   tower_t2: {
     id: "tower_t2", titleKey: "sc_tower_t2", series:"tower", quiz:true, gate:"tower_t1",
     levels: [
-      { sec:"lv7", trick:"row", need:16, text:{ tag:"qt2rTag", riddle:"qt2rRiddle", hint:"qt2rHint" }, hints:["qt2rH1","qt2rH2","qt2rH3"] },
-      { sec:"lv6", trick:"flame", flameGain:1.45, text:{ tag:"qt2fTag", riddle:"qt2fRiddle", hint:"qt2fHint" }, hints:["qt2fH1","qt2fH2","qt2fH3"] },
       { sec:"lv1", trick:"press", pressMs:1000, text:{ tag:"qt2pTag", riddle:"qt2pRiddle", press:"qt2pPress", reveal:"qtReveal", hint:"qt2pHint" }, hints:["qt2pH1","qt2pH2","qt2pH3"] },
+      { sec:"lv6", trick:"flame", flameGain:1.45, text:{ tag:"qt2fTag", riddle:"qt2fRiddle", hint:"qt2fHint" }, hints:["qt2fH1","qt2fH2","qt2fH3"] },
+      { sec:"lv7", trick:"row", need:16, text:{ tag:"qt2rTag", riddle:"qt2rRiddle", hint:"qt2rHint" }, hints:["qt2rH1","qt2rH2","qt2rH3"] },
+      { sec:"lv3", trick:"tilt", text:{ tag:"qt2tTag", riddle:"qt2tRiddle", secret:"qtReveal", hint:"qt2tHint", fbhint:"qt2tFbHint" }, hints:["qt2tH1","qt2tH2","qt2tH3"] },
+      { sec:"lv4", trick:"blow", text:{ tag:"qt2bTag", riddle:"qt2bRiddle", hint:"qt2bHint" }, hints:["qt2bH1","qt2bH2","qt2bH3"] },
+      { sec:"lv5", trick:"route", text:{ tag:"qt2gTag", riddle:"qt2gRiddle", hint:"qt2gHint", reveal:"qtReveal" }, hints:["qt2gH1","qt2gH2","qt2gH3"] },
+      { sec:"lvRowPar", trick:"rowpar", text:{ tag:"qt2rpTag", riddle:"qt2rpRiddle", hint:"qt2rpHint" }, hints:["qt2rpH1","qt2rpH2","qt2rpH3"] },
+      { sec:"lvEmber", trick:"ember", text:{ tag:"qt2eTag", riddle:"qt2eRiddle", hint:"qt2eHint" }, hints:["qt2eH1","qt2eH2","qt2eH3"] },
     ],
     ending: { title:"qt2DoneTitle", body:"qt2DoneBody", end:"qt2DoneEnd" },
   },
