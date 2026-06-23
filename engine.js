@@ -410,7 +410,7 @@ const $ = id => document.getElementById(id);
   let gateTarget=0, gatePressIdx=-1, gatePressStart=0, gateRaf=null, gateDone=false, gateBound=false;  // A1 문간(gate)
   const GATE_HOLD_MS=650;  // A1 정답 패드 길게누르기 시간
   let tideCtx=null, tideStream=null, tideRaf=null, tideLevel=0, tideHold=0, tideDone=false, tideBound=false, tideFallback=false, tideFallbackHold=false, tideLastTs=0;  // A5 물때(tide)
-  const TIDE_LOW=40, TIDE_HIGH=74, TIDE_HOLD_MS=2200;  // A5 — tideReset/init가 읽으므로 resetLevels보다 먼저(TDZ 방지). 띠 넓힘+유지시간↓(난이도↓)
+  const TIDE_LOW=32, TIDE_HIGH=78, TIDE_HOLD_MS=2200;  // A5 — tideReset/init가 읽으므로 resetLevels보다 먼저(TDZ 방지). 띠 더 넓힘(특히 하한↓=약한 숨도 OK)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
   let rpCount=0, rpNeed=10, rpLeftDown=false, rpRightDown=false, rpLast=0, rpDone=false, rpBound=false;
