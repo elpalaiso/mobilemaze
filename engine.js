@@ -121,7 +121,7 @@ const $ = id => document.getElementById(id);
     tightrope:{ init:tightropeInit, cleanup:tightropeCleanup, reset:tightropeReset, bind:(lv)=>{ const t=lv.text||{};
       tightropeLevel=lv; tightropeReset(); setT("rope-tag",CUR[t.tag]); setT("rope-riddle",CUR[t.riddle]); setT("rope-hint",CUR[t.hint]);
       setT("ropeSensorBtn",CUR.ropeSensorBtn); setT("ropeLeftBtn",CUR.ropeLeftBtn); setT("ropeRightBtn",CUR.ropeRightBtn);
-      setT("ropeGauge",CUR.ropePrefix+"0%"); setT("rope-reveal",CUR[t.reveal]); } },
+      setT("ropeGauge",CUR.ropePrefix+"0/"+ROPE_PTS.length); setT("rope-reveal",CUR[t.reveal]); } },
     flame:    { init:flameInit, cleanup:flameStop, reset:flameReset, bind:(lv)=>{ const t=lv.text||{};
       setT("l6-tag",CUR[t.tag]); setT("l6-riddle",CUR[t.riddle]); setT("l6-hint",CUR[t.hint]); } },
     row:      { init:rowInit, reset:rowReset, bind:(lv)=>{ const t=lv.text||{};
@@ -380,8 +380,8 @@ const $ = id => document.getElementById(id);
   let holdfastLevel=null, holdCanvas=null, holdCtx=null, holdPad=null, holdLockBtn=null, holdGauge=null, holdStars=[], holdStroke=[], holdDone=false;
   let holdActive=false, holdLocked=false, holdId=null, holdDrawId=null, holdRaf=null, holdBound=false, holdListeners=[];
   let tightropeLevel=null, ropeCanvas=null, ropeCtx=null, ropeGauge=null, ropeFill=null, ropeFallback=null;
-  let ropeStars=[], ropeStroke=[], ropeDrawing=false, ropeDone=false, ropeCompleteDone=false, ropeRaf=null, ropeBound=false, ropeListeners=[];
-  let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeCenterMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1, ropeBaseline=0;
+  let ropeStars=[], ropeNext=0, ropeTapFlash=null, ropeCompleteDone=false, ropeRaf=null, ropeBound=false, ropeListeners=[];
+  let ropeX=0, ropeV=0, ropeTilt=0, ropeFallbackDir=0, ropeFallMs=0, ropeLastTs=0, ropeGotEvent=false, ropeTimer=null, ropeLastDrift=1, ropeBaseline=0;
   const ROPE_PTS = [ {x:0.12,y:0.72},{x:0.29,y:0.42},{x:0.48,y:0.56},{x:0.67,y:0.34},{x:0.88,y:0.62} ];  // A6 — tightropeReset가 init때 읽으므로 resetLevels보다 먼저 선언(TDZ 방지)
   let flameShelter=0, flameDone=false, flameSheltering=false, flameBtnHold=false, flameRaf=null, flameBox=null, flameGain=2.0;
   let rowCount=0, rowNeed=12, rowNext='left', rowDone=false, rowBound=false;
@@ -782,14 +782,15 @@ const $ = id => document.getElementById(id);
     }
   }
 
-  /* ===== A6 — 외줄(Tightrope): 기울여 공을 중심에 두면서 동시에 별길을 긋는다 ===== */
+  /* ===== A6 — 외줄(Tightrope): 기울여 공을 중심에 두면서 중앙에서 별을 순서대로 탭한다 ===== */
   const ROPE_BUTTON_PUSH = 0.030;   // 폴백 좌우 버튼 보정력
   const ROPE_CTRL = 0.030;          // 기울임 보정 권한(정규화 기울기 기준) — 키우면 더 잘 잡힘(쉬움)
   const ROPE_INSTAB = 0.010;        // 외줄 불안정: 중심서 멀수록 미끄러짐 — 0이면 안정(쉬움), 키우면 빡셈
   const ROPE_FRICTION = 0.90;       // 감쇠(흔들림 억제)
   const ROPE_LIMIT = 0.30;          // 중앙 허용 폭(관대)
   const ROPE_FALL_MS = 900;
-  const ROPE_CENTER_MS = 900;       // 중앙 유지 요구 시간
+  const ROPE_TAP_RADIUS = 30;       // 다음 별 탭 허용 반경(px)
+  const ROPE_FLASH_MS = 240;        // 무효/성공 탭 피드백
   // ROPE_PTS는 위(resetLevels보다 먼저)로 이동함 — TDZ 방지
   function tightropeInit(){
     ropeCanvas=$("ropeCanvas"); ropeGauge=$("ropeGauge"); ropeFill=$("ropeBalanceFill"); ropeFallback=$("ropeFallback");
@@ -798,14 +799,10 @@ const $ = id => document.getElementById(id);
     if(!ropeBound){
       const on=(el,type,fn,opt)=>{ el.addEventListener(type,fn,opt); ropeListeners.push([el,type,fn,opt]); };
       const sensorBtn=$("ropeSensorBtn"), left=$("ropeLeftBtn"), right=$("ropeRightBtn");
-      const canvasDown=e=>{ if(ropeCompleteDone) return; e.preventDefault(); ropeDrawing=true; try{ ropeCanvas.setPointerCapture(e.pointerId); }catch(_){} ropeAdd(e); };
-      const canvasMove=e=>{ if(ropeDrawing){ e.preventDefault(); ropeAdd(e); } };
-      const canvasEnd=e=>{ ropeDrawing=false; try{ ropeCanvas.releasePointerCapture(e.pointerId); }catch(_){} };
+      const canvasDown=e=>{ if(ropeCompleteDone) return; e.preventDefault(); ropeTap(e); };
       const holdDir=dir=>e=>{ e.preventDefault(); ropeFallbackDir=dir; ropeLastDrift=-dir; };
       const clearDir=dir=>e=>{ if(ropeFallbackDir===dir) ropeFallbackDir=0; };
       on(ropeCanvas,"pointerdown",canvasDown);
-      on(ropeCanvas,"pointermove",canvasMove);
-      on(ropeCanvas,"pointerup",canvasEnd); on(ropeCanvas,"pointercancel",canvasEnd); on(ropeCanvas,"lostpointercapture",canvasEnd);
       if(sensorBtn) on(sensorBtn,"click",tightropeEnable);
       if(left){
         on(left,"pointerdown",holdDir(-1)); on(left,"pointerup",clearDir(-1)); on(left,"pointercancel",clearDir(-1));
@@ -827,7 +824,7 @@ const $ = id => document.getElementById(id);
     window.removeEventListener("deviceorientation",tightropeOnTilt);
     if(ropeTimer){ clearTimeout(ropeTimer); ropeTimer=null; }
     ropeListeners.forEach(([el,type,fn,opt])=>el.removeEventListener(type,fn,opt));
-    ropeListeners=[]; ropeBound=false; ropeDrawing=false; ropeFallbackDir=0;
+    ropeListeners=[]; ropeBound=false; ropeFallbackDir=0;
   }
   function tightropeEnable(){
     if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function"){
@@ -852,18 +849,18 @@ const $ = id => document.getElementById(id);
   function tightropeReset(){
     tightropeStop();
     ropeStars=ROPE_PTS.map(p=>({x:p.x,y:p.y,hit:false}));
-    ropeStroke=[]; ropeDrawing=false; ropeDone=false; ropeCompleteDone=false;
-    ropeX=0; ropeV=0; ropeTilt=0; ropeFallbackDir=0; ropeFallMs=0; ropeCenterMs=0; ropeLastTs=0; ropeGotEvent=false; ropeLastDrift=1; ropeBaseline=0;
+    ropeNext=0; ropeTapFlash=null; ropeCompleteDone=false;
+    ropeX=0; ropeV=0; ropeTilt=0; ropeFallbackDir=0; ropeFallMs=0; ropeLastTs=0; ropeGotEvent=false; ropeLastDrift=1; ropeBaseline=0;
     const rv=$("rope-reveal"); if(rv) rv.classList.remove("show");
     const b=$("ropeSensorBtn"); if(b) b.style.display="";
     if(ropeFallback) ropeFallback.style.display="none";
-    if(ropeGauge){ ropeGauge.classList.remove("done"); ropeGauge.textContent=CUR.ropePrefix+"0%"; }
+    if(ropeGauge){ ropeGauge.classList.remove("done"); ropeGauge.textContent=CUR.ropePrefix+"0/"+ROPE_PTS.length; }
     if(ropeFill) ropeFill.style.width="0%";
     ropeRender();
   }
   function tightropeSoftReset(){
-    ropeStroke=[]; ropeStars.forEach(s=>s.hit=false); ropeDone=false;
-    ropeX=0; ropeV=0; ropeFallMs=0; ropeCenterMs=0; ropeDrawing=false;
+    ropeStars.forEach(s=>s.hit=false); ropeNext=0; ropeTapFlash=null;
+    ropeX=0; ropeV=0; ropeFallMs=0;
     haptic([0,40,30,40]);
   }
   function ropeSize(){
@@ -871,16 +868,22 @@ const $ = id => document.getElementById(id);
     ropeCanvas.width = ropeCanvas.clientWidth || 320;
     ropeCanvas.height = 230;
   }
-  function ropeAdd(e){
+  function ropeTap(e){
     if(ropeCompleteDone || !ropeCanvas) return;
     const r=ropeCanvas.getBoundingClientRect();
     const x=e.clientX-r.left, y=e.clientY-r.top;
-    ropeStroke.push({x,y});
-    ropeStars.forEach(s=>{
-      const sx=s.x*ropeCanvas.width, sy=s.y*ropeCanvas.height;
-      if(!s.hit && Math.hypot(x-sx,y-sy) < 25){ s.hit=true; haptic(8); }
-    });
-    if(ropeStars.length && ropeStars.every(s=>s.hit)) ropeDone=true;
+    const next=ropeStars[ropeNext];
+    const centered=Math.abs(ropeX)<=ROPE_LIMIT;
+    let ok=false;
+    if(next){
+      const sx=next.x*ropeCanvas.width, sy=next.y*ropeCanvas.height;
+      ok=centered && Math.hypot(x-sx,y-sy) <= ROPE_TAP_RADIUS;
+      if(ok){
+        next.hit=true; ropeNext++; haptic(8);
+        if(ropeNext>=ropeStars.length){ ropeRender(); tightropeComplete(); return; }
+      } else haptic(4);
+    }
+    ropeTapFlash={x,y,ok,ts:performance.now()};
     ropeRender();
   }
   function tightropeLoop(ts){
@@ -895,10 +898,9 @@ const $ = id => document.getElementById(id);
     ropeX += ropeV*dtf;
     ropeX = Math.max(-0.6, Math.min(0.6, ropeX));
     const centered = Math.abs(ropeX) <= ROPE_LIMIT;
-    if(centered){ ropeCenterMs += dt; ropeFallMs=Math.max(0,ropeFallMs-dt*1.8); }
-    else { ropeCenterMs=0; ropeFallMs += dt; }
+    if(centered) ropeFallMs=Math.max(0,ropeFallMs-dt*1.8);
+    else ropeFallMs += dt;
     if(ropeFallMs >= ROPE_FALL_MS) tightropeSoftReset();
-    if(ropeDone && ropeCenterMs >= ROPE_CENTER_MS) tightropeComplete();
     ropeRender();
     ropeRaf=requestAnimationFrame(tightropeLoop);
   }
@@ -917,29 +919,54 @@ const $ = id => document.getElementById(id);
     ropeCtx.beginPath(); ropeCtx.moveTo(mid-w*ROPE_LIMIT, ballY); ropeCtx.lineTo(mid+w*ROPE_LIMIT, ballY); ropeCtx.stroke();
     ropeCtx.strokeStyle="rgba(227,165,66,.56)"; ropeCtx.lineWidth=2;
     ropeCtx.beginPath(); ropeCtx.moveTo(mid, 20); ropeCtx.lineTo(mid, 52); ropeCtx.stroke();
-    if(ropeStroke.length>1){
-      ropeCtx.strokeStyle=ropeDone ? "rgba(227,165,66,.80)" : "rgba(227,165,66,.56)";
+    const hitStars=ropeStars.filter(s=>s.hit);
+    if(hitStars.length>1){
+      ropeCtx.strokeStyle="rgba(227,165,66,.72)";
       ropeCtx.lineWidth=3; ropeCtx.lineCap="round"; ropeCtx.lineJoin="round";
       ropeCtx.beginPath();
-      ropeStroke.forEach((p,i)=> i ? ropeCtx.lineTo(p.x,p.y) : ropeCtx.moveTo(p.x,p.y));
+      hitStars.forEach((s,i)=>{
+        const sx=s.x*w, sy=s.y*h;
+        if(i) ropeCtx.lineTo(sx,sy); else ropeCtx.moveTo(sx,sy);
+      });
       ropeCtx.stroke();
     }
-    ropeStars.forEach(s=>{
+    if(ropeNext>0 && ropeNext<ropeStars.length){
+      const prev=ropeStars[ropeNext-1], next=ropeStars[ropeNext];
+      ropeCtx.strokeStyle="rgba(227,165,66,.24)"; ropeCtx.lineWidth=2; ropeCtx.setLineDash([5,7]);
+      ropeCtx.beginPath(); ropeCtx.moveTo(prev.x*w,prev.y*h); ropeCtx.lineTo(next.x*w,next.y*h); ropeCtx.stroke();
+      ropeCtx.setLineDash([]);
+    }
+    ropeStars.forEach((s,i)=>{
       const sx=s.x*w, sy=s.y*h;
+      const next=i===ropeNext && !ropeCompleteDone;
       if(s.hit){
         ropeCtx.beginPath(); ropeCtx.arc(sx,sy,12,0,7);
         ropeCtx.strokeStyle="rgba(227,165,66,.42)"; ropeCtx.lineWidth=2; ropeCtx.stroke();
       }
+      if(next){
+        ropeCtx.beginPath(); ropeCtx.arc(sx,sy,18,0,7);
+        ropeCtx.strokeStyle=Math.abs(ropeX)<=ROPE_LIMIT ? "rgba(240,197,107,.86)" : "rgba(191,88,48,.62)";
+        ropeCtx.lineWidth=3; ropeCtx.stroke();
+      }
       ropeCtx.beginPath(); ropeCtx.arc(sx,sy, s.hit?6:4, 0, 7);
-      ropeCtx.fillStyle=s.hit ? "#e3a542" : "#3a4663"; ropeCtx.fill();
+      ropeCtx.fillStyle=s.hit ? "#e3a542" : (next ? "#f0c56b" : "#3a4663"); ropeCtx.fill();
     });
+    if(ropeTapFlash){
+      const age=performance.now()-ropeTapFlash.ts;
+      if(age<ROPE_FLASH_MS){
+        const a=1-age/ROPE_FLASH_MS;
+        ropeCtx.beginPath(); ropeCtx.arc(ropeTapFlash.x,ropeTapFlash.y,10+8*(1-a),0,7);
+        ropeCtx.strokeStyle=ropeTapFlash.ok ? `rgba(227,165,66,${a*.65})` : `rgba(191,88,48,${a*.55})`;
+        ropeCtx.lineWidth=2; ropeCtx.stroke();
+      } else ropeTapFlash=null;
+    }
     const bx=mid + ropeX*w*0.72;
     ropeCtx.beginPath(); ropeCtx.arc(bx,ballY,10,0,7);
     ropeCtx.fillStyle=Math.abs(ropeX)<=ROPE_LIMIT ? "#f0c56b" : "#bf5830"; ropeCtx.fill();
     ropeCtx.strokeStyle="rgba(255,255,255,.28)"; ropeCtx.lineWidth=1; ropeCtx.stroke();
-    const pct=Math.max(0,Math.min(100,Math.round(ropeCenterMs/ROPE_CENTER_MS*100)));
-    if(ropeFill) ropeFill.style.width=pct+"%";
-    if(ropeGauge && !ropeCompleteDone) ropeGauge.textContent=(ropeDone ? CUR.ropeReadyPrefix : CUR.ropePrefix)+pct+"%";
+    const balancePct=Math.max(0,Math.min(100,Math.round((1-Math.abs(ropeX)/ROPE_LIMIT)*100)));
+    if(ropeFill) ropeFill.style.width=balancePct+"%";
+    if(ropeGauge && !ropeCompleteDone) ropeGauge.textContent=CUR.ropePrefix+ropeNext+"/"+ropeStars.length;
   }
 
   /* ===== 길 그리기(road) — 측량가 시리즈: 측량가가 떠나는 사람에게 건네는 길을 *순서대로* 그린다 =====
